@@ -63,7 +63,7 @@ export const experiences = pgTable(
     longitude: decimal("longitude", { precision: 10, scale: 7 }),
     duration: varchar("duration", { length: 100 }).notNull(),
     participants: varchar("participants", { length: 100 }).notNull(),
-    date: date("date").notNull(),
+    date: varchar("date", { length: 100 }).notNull(),
     category: varchar("category", { length: 100 }).notNull(),
     nicheCategory: varchar("niche_category", { length: 100 }),
     trending: boolean("trending").default(false),

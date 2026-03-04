@@ -1,0 +1,3 @@
+[{"id":"03ceb851-b7f6-4cc8-93f9-61683f1ac08d","from_user_id":"084f9602-9d32-4fa2-968d-d8f1e17189c7","to_user_id":"01b74ed9-6e79-4849-8a71-fd7dd47f93ca","status":"pending","created_at":"2025-07-08T07:53:51.392256+00:00"}, 
+ {"id":"51ff50af-1a44-43fa-a9b8-e870c3feb1b9","from_user_id":"084f9602-9d32-4fa2-968d-d8f1e17189c7","to_user_id":"24955534-a915-4b00-be55-fe47d6b391b4","status":"accepted","created_at":"2025-07-08T07:54:01.275969+00:00"}, 
+ {"id":"7dde5434-bdb3-4ca1-84f7-b7df7d4278ba","from_user_id":"230cbdcd-2b28-452d-bfaa-8038ea492eed","to_user_id":"24955534-a915-4b00-be55-fe47d6b391b4","status":"accepted","created_at":"2025-07-10T16:14:08.268916+00:00"}]
