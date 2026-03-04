@@ -13,6 +13,7 @@ import {
   Calendar,
   ArrowLeft,
   Heart,
+  Bookmark,
   ShoppingCart,
   ChevronLeft,
   ChevronRight,
@@ -29,6 +30,7 @@ import { cn } from "@/lib/utils";
 import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSavedExperiences } from "@/hooks/useSavedExperiences";
 import { useTrackExperienceView } from "@/hooks/useTrackExperienceView";
 import ExperienceCard from "@/components/ExperienceCard";
 import type { Experience } from "@/types/experience";
@@ -67,6 +69,7 @@ export default function ExperienceDetailPage() {
   const { addToCart } = useCart();
   const { toggleWishlist, isWishlisted } = useWishlist();
   const { user } = useAuth();
+  const { isSaved, toggleSaved } = useSavedExperiences();
 
   const [experience, setExperience] = useState<Experience | null>(null);
   const [loading, setLoading] = useState(true);
@@ -283,6 +286,22 @@ export default function ExperienceDetailPage() {
                 fill={inWishlist ? "currentColor" : "none"}
               />
               {inWishlist ? "Liked" : "Like"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => toggleSaved(experience.id)}
+              className={cn(
+                "flex items-center gap-2 font-medium border",
+                isSaved(experience.id)
+                  ? "text-primary border-primary"
+                  : "text-gray-700 border-gray-300"
+              )}
+            >
+              <Bookmark
+                className={cn("h-5 w-5", isSaved(experience.id) && "fill-current")}
+                fill={isSaved(experience.id) ? "currentColor" : "none"}
+              />
+              {isSaved(experience.id) ? "Saved" : "Save for Later"}
             </Button>
           </div>
 

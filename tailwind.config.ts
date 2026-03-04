@@ -91,6 +91,10 @@ export default {
           from: { opacity: "0", filter: "blur(8px)" },
           to: { opacity: "1", filter: "blur(0)" },
         },
+        "image-trail-scroll": {
+          from: { transform: "translateX(0)" },
+          to: { transform: "translateX(-50%)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -100,6 +104,7 @@ export default {
         "zoom-in": "zoom-in 0.5s ease-out",
         "slide-in": "slide-in 0.5s ease-out",
         "blur-in": "blur-in 0.7s ease-out",
+        "image-trail": "image-trail-scroll var(--trail-duration, 30s) linear infinite",
       },
     },
   },

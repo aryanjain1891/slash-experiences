@@ -205,9 +205,55 @@ interface SearchResult {
   id: string;
   title: string;
   location?: string;
-  price?: number;
+  category?: string;
+  price?: number | string;
   imageUrl?: string[];
   images?: string[];
+  image_url?: string | null;
+}
+
+interface GroupedResults {
+  titleMatches: SearchResult[];
+  locationMatches: SearchResult[];
+  categoryMatches: SearchResult[];
+}
+
+function groupSearchResults(
+  results: SearchResult[],
+  query: string
+): GroupedResults {
+  const q = query.toLowerCase();
+  const titleMatches: SearchResult[] = [];
+  const locationMatches: SearchResult[] = [];
+  const categoryMatches: SearchResult[] = [];
+  const seen = new Set<string>();
+
+  for (const r of results) {
+    if (r.title?.toLowerCase().includes(q)) {
+      titleMatches.push(r);
+      seen.add(r.id);
+    }
+  }
+  for (const r of results) {
+    if (!seen.has(r.id) && r.location?.toLowerCase().includes(q)) {
+      locationMatches.push(r);
+      seen.add(r.id);
+    }
+  }
+  for (const r of results) {
+    if (!seen.has(r.id) && r.category?.toLowerCase().includes(q)) {
+      categoryMatches.push(r);
+      seen.add(r.id);
+    }
+  }
+  // Anything not yet categorized goes into title matches
+  for (const r of results) {
+    if (!seen.has(r.id)) {
+      titleMatches.push(r);
+    }
+  }
+
+  return { titleMatches, locationMatches, categoryMatches };
 }
 
 // ---------------------------------------------------------------------------
@@ -356,10 +402,17 @@ export default function Navbar({ isDarkPageProp = false }: NavbarProps) {
     });
   };
 
+  const getFlatResults = useCallback((): SearchResult[] => {
+    if (searchResults.length === 0) return [];
+    const grouped = groupSearchResults(searchResults, searchQuery);
+    return [...grouped.titleMatches, ...grouped.locationMatches, ...grouped.categoryMatches];
+  }, [searchResults, searchQuery]);
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedResultIndex >= 0 && selectedResultIndex < searchResults.length) {
-      const selected = searchResults[selectedResultIndex];
+    const flat = getFlatResults();
+    if (selectedResultIndex >= 0 && selectedResultIndex < flat.length) {
+      const selected = flat[selectedResultIndex];
       if (selected?.title) {
         addToSearchHistory(selected.title);
         setSearchOpen(false);
@@ -384,31 +437,39 @@ export default function Navbar({ isDarkPageProp = false }: NavbarProps) {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (!searchResults.length) return;
+    const flat = getFlatResults();
+    if (e.key === "Escape") {
+      setSearchOpen(false);
+      document.body.style.overflow = "";
+      return;
+    }
+    if (!flat.length) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        handleSearchSubmit(e as unknown as React.FormEvent);
+      }
+      return;
+    }
     switch (e.key) {
       case "ArrowDown":
         e.preventDefault();
         setSelectedResultIndex((prev) =>
-          prev < searchResults.length - 1 ? prev + 1 : 0
+          prev < flat.length - 1 ? prev + 1 : 0
         );
         break;
       case "ArrowUp":
         e.preventDefault();
         setSelectedResultIndex((prev) =>
-          prev > 0 ? prev - 1 : searchResults.length - 1
+          prev > 0 ? prev - 1 : flat.length - 1
         );
         break;
       case "Enter":
         e.preventDefault();
-        if (selectedResultIndex >= 0 && selectedResultIndex < searchResults.length) {
-          handleSearchResultClick(searchResults[selectedResultIndex].id);
+        if (selectedResultIndex >= 0 && selectedResultIndex < flat.length) {
+          handleSearchResultClick(flat[selectedResultIndex].id);
         } else if (searchQuery.trim()) {
           handleSearchSubmit(e as unknown as React.FormEvent);
         }
-        break;
-      case "Escape":
-        setSearchOpen(false);
-        document.body.style.overflow = "";
         break;
     }
   };
@@ -1123,60 +1184,103 @@ export default function Navbar({ isDarkPageProp = false }: NavbarProps) {
             </div>
           )}
 
-          {/* Search Results */}
-          {searchResults.length > 0 && (
-            <div className="mt-6">
-              <p className="text-sm text-gray-600 mb-3">Search Results</p>
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                {searchResults.map((experience, index) => {
-                  const thumb =
-                    experience.imageUrl?.[0] ?? experience.images?.[0] ?? null;
-                  return (
-                    <button
-                      key={experience.id}
-                      onClick={() => handleSearchResultClick(experience.id)}
-                      className={cn(
-                        "w-full text-left p-3 rounded-lg hover:bg-gray-100/80 backdrop-blur-sm text-gray-700 flex items-center justify-between group transition-colors",
-                        selectedResultIndex === index && "bg-gray-200/80"
+          {/* Search Results - Grouped */}
+          {searchResults.length > 0 && (() => {
+            const grouped = groupSearchResults(searchResults, searchQuery);
+            const allFlat = [...grouped.titleMatches, ...grouped.locationMatches, ...grouped.categoryMatches];
+
+            const renderResult = (experience: SearchResult, flatIndex: number) => {
+              const thumb =
+                experience.imageUrl?.[0] ?? experience.images?.[0] ?? (typeof experience.image_url === "string" ? experience.image_url : null);
+              const priceVal = experience.price != null ? parseFloat(String(experience.price)) : null;
+              return (
+                <button
+                  key={experience.id}
+                  onClick={() => handleSearchResultClick(experience.id)}
+                  className={cn(
+                    "w-full text-left p-3 rounded-lg hover:bg-gray-100/80 backdrop-blur-sm text-gray-700 flex items-center justify-between group transition-colors",
+                    selectedResultIndex === flatIndex && "bg-gray-200/80"
+                  )}
+                  onMouseEnter={() => setSelectedResultIndex(flatIndex)}
+                  onMouseLeave={() => setSelectedResultIndex(-1)}
+                >
+                  <div className="flex items-center space-x-3 flex-1 min-w-0">
+                    <div className="w-12 h-12 rounded-lg bg-gray-200 flex-shrink-0 overflow-hidden">
+                      {thumb && (
+                        <img
+                          src={thumb}
+                          alt={experience.title}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = "none";
+                          }}
+                        />
                       )}
-                      onMouseEnter={() => setSelectedResultIndex(index)}
-                      onMouseLeave={() => setSelectedResultIndex(-1)}
-                    >
-                      <div className="flex items-center space-x-3 flex-1 min-w-0">
-                        <div className="w-12 h-12 rounded-lg bg-gray-200 flex-shrink-0 overflow-hidden">
-                          {thumb && (
-                            <img
-                              src={thumb}
-                              alt={experience.title}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).style.display = "none";
-                              }}
-                            />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-gray-900 truncate group-hover:text-primary transition-colors">
-                            {experience.title}
-                          </div>
-                          {experience.location && (
-                            <div className="text-sm text-gray-500 truncate">
-                              {experience.location}
-                            </div>
-                          )}
-                        </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-gray-900 truncate group-hover:text-primary transition-colors">
+                        {experience.title}
                       </div>
-                      {experience.price != null && (
-                        <div className="text-sm font-medium text-gray-900 flex-shrink-0">
-                          ₹{experience.price.toLocaleString()}
+                      {experience.location && (
+                        <div className="text-sm text-gray-500 truncate">
+                          <MapPin className="inline h-3 w-3 mr-1" />
+                          {experience.location}
                         </div>
                       )}
-                    </button>
-                  );
-                })}
+                    </div>
+                  </div>
+                  {priceVal != null && !isNaN(priceVal) && (
+                    <div className="text-sm font-medium text-gray-900 flex-shrink-0">
+                      ₹{priceVal.toLocaleString("en-IN")}
+                    </div>
+                  )}
+                </button>
+              );
+            };
+
+            let flatIdx = 0;
+
+            return (
+              <div className="mt-6 max-h-80 overflow-y-auto">
+                {grouped.titleMatches.length > 0 && (
+                  <div className="mb-3">
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide px-1 mb-1">Title Matches</p>
+                    <div className="space-y-1">
+                      {grouped.titleMatches.map((r) => {
+                        const el = renderResult(r, flatIdx);
+                        flatIdx++;
+                        return el;
+                      })}
+                    </div>
+                  </div>
+                )}
+                {grouped.locationMatches.length > 0 && (
+                  <div className="mb-3">
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide px-1 mb-1">Location Matches</p>
+                    <div className="space-y-1">
+                      {grouped.locationMatches.map((r) => {
+                        const el = renderResult(r, flatIdx);
+                        flatIdx++;
+                        return el;
+                      })}
+                    </div>
+                  </div>
+                )}
+                {grouped.categoryMatches.length > 0 && (
+                  <div className="mb-3">
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide px-1 mb-1">Category Matches</p>
+                    <div className="space-y-1">
+                      {grouped.categoryMatches.map((r) => {
+                        const el = renderResult(r, flatIdx);
+                        flatIdx++;
+                        return el;
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* No Results */}
           {searchQuery.length >= 2 && searchResults.length === 0 && (

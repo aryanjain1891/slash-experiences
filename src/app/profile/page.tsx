@@ -26,9 +26,11 @@ import {
   Edit,
   Share2,
   Eye,
+  Bookmark,
   Loader2,
 } from "lucide-react";
 import ExperienceCard from "@/components/ExperienceCard";
+import { useSavedExperiences } from "@/hooks/useSavedExperiences";
 import type { Experience } from "@/types/experience";
 
 interface ProfileData {
@@ -66,6 +68,10 @@ export default function ProfilePage() {
   const [viewedItems, setViewedItems] = useState<Experience[]>([]);
   const [wishlistCount, setWishlistCount] = useState(0);
   const [viewedCount, setViewedCount] = useState(0);
+
+  const [savedItems, setSavedItems] = useState<Experience[]>([]);
+  const [loadingSaved, setLoadingSaved] = useState(false);
+  const { savedIds, isSaved, toggleSaved } = useSavedExperiences();
 
   const [loadingWishlist, setLoadingWishlist] = useState(false);
   const [loadingBookings, setLoadingBookings] = useState(false);
@@ -115,6 +121,29 @@ export default function ProfilePage() {
       .catch(() => {})
       .finally(() => setLoadingBookings(false));
   }, [isAuthenticated]);
+
+  // Fetch saved (localStorage-backed) experiences
+  useEffect(() => {
+    if (savedIds.length === 0) {
+      setSavedItems([]);
+      return;
+    }
+    setLoadingSaved(true);
+    (async () => {
+      try {
+        const results: Experience[] = [];
+        for (const eid of savedIds) {
+          try {
+            const res = await fetch(`/api/experiences/${eid}`);
+            if (res.ok) results.push(await res.json());
+          } catch { /* skip failed */ }
+        }
+        setSavedItems(results);
+      } finally {
+        setLoadingSaved(false);
+      }
+    })();
+  }, [savedIds]);
 
   // Fetch viewed history
   useEffect(() => {
@@ -193,6 +222,7 @@ export default function ProfilePage() {
   const stats = [
     { label: "Viewed", value: viewedCount },
     { label: "Liked", value: wishlistCount },
+    { label: "Saved", value: savedIds.length },
     { label: "Bookings", value: bookings.length },
   ];
 
@@ -243,7 +273,7 @@ export default function ProfilePage() {
 
       <div className="container max-w-5xl mx-auto px-6 py-8">
         {/* Stats Bar */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
           {stats.map((stat) => (
             <Card key={stat.label}>
               <CardContent className="py-4 text-center">
@@ -261,6 +291,9 @@ export default function ProfilePage() {
           <TabsList className="w-full justify-start">
             <TabsTrigger value="wishlist" className="gap-2">
               <Heart className="h-4 w-4" /> Wishlist
+            </TabsTrigger>
+            <TabsTrigger value="saved" className="gap-2">
+              <Bookmark className="h-4 w-4" /> Saved
             </TabsTrigger>
             <TabsTrigger value="bookings" className="gap-2">
               <Calendar className="h-4 w-4" /> Bookings
@@ -298,6 +331,39 @@ export default function ProfilePage() {
                 <CardContent className="py-12 text-center text-muted-foreground">
                   <Heart className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
                   <p>No liked experiences yet. Start exploring!</p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          {/* Saved Tab (localStorage-backed, no auth required) */}
+          <TabsContent value="saved" className="mt-6">
+            {loadingSaved ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : savedItems.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {savedItems.map((exp) => (
+                  <ExperienceCard
+                    key={exp.id}
+                    id={exp.id}
+                    title={exp.title}
+                    image_url={exp.image_url}
+                    price={exp.price}
+                    location={exp.location}
+                    duration={exp.duration}
+                    category={exp.category}
+                    isWishlisted={isWishlisted(exp.id)}
+                    onToggleWishlist={toggleWishlist}
+                  />
+                ))}
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="py-12 text-center text-muted-foreground">
+                  <Bookmark className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                  <p>No saved experiences yet. Bookmark experiences to find them here!</p>
                 </CardContent>
               </Card>
             )}

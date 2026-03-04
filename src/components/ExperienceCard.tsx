@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Heart, HeartIcon, MapPin, Clock, Navigation } from "lucide-react";
+import { Heart, HeartIcon, MapPin, Clock, Navigation, Bookmark } from "lucide-react";
 import { formatDistance } from "@/lib/location";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -14,6 +14,7 @@ import {
   CarouselPrevious,
   CarouselNext,
 } from "@/components/ui/carousel";
+import { useSavedExperiences } from "@/hooks/useSavedExperiences";
 
 const FALLBACK_IMAGES = [
   "/assets/placeholder.jpg",
@@ -92,6 +93,7 @@ export default function ExperienceCard({
   distanceKm,
 }: ExperienceCardProps) {
   const router = useRouter();
+  const { isSaved, toggleSaved } = useSavedExperiences();
   const images = parseImageUrls(image_url ?? null);
   const [imgSrc, setImgSrc] = useState(images[0] || "/assets/placeholder.jpg");
   const [imgError, setImgError] = useState(false);
@@ -193,6 +195,24 @@ export default function ExperienceCard({
             )}
           </button>
         )}
+
+        {/* Save for later bookmark */}
+        <button
+          className="absolute top-4 right-14 z-20 bg-white/80 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+          title={isSaved(id) ? "Remove from saved" : "Save for later"}
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            toggleSaved(id);
+          }}
+        >
+          <Bookmark
+            className={cn(
+              "h-5 w-5 transition",
+              isSaved(id) ? "text-primary fill-primary" : "text-gray-300 group-hover:text-primary"
+            )}
+          />
+        </button>
       </div>
 
       {/* Info section */}
