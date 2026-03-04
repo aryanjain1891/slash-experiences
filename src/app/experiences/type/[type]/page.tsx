@@ -4,17 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import ExperienceCard from "@/components/ExperienceCard";
 import { useWishlist } from "@/contexts/WishlistContext";
-
-interface Experience {
-  id: string;
-  title: string;
-  description?: string;
-  imageUrl?: string;
-  price: number;
-  location?: string;
-  duration?: string;
-  category?: string;
-}
+import type { Experience } from "@/types/experience";
 
 export default function ExperienceTypePage() {
   const { type } = useParams<{ type: string }>();
@@ -31,7 +21,8 @@ export default function ExperienceTypePage() {
         const res = await fetch(`/api/experiences?type=${encodeURIComponent(typeName)}`);
         if (res.ok) {
           const data = await res.json();
-          setExperiences(data.experiences ?? []);
+          const list = Array.isArray(data) ? data : data.experiences ?? [];
+          setExperiences(list);
         }
       } catch (err) {
         console.error("Failed to load experiences by type:", err);
@@ -58,7 +49,15 @@ export default function ExperienceTypePage() {
           {experiences.map((exp) => (
             <ExperienceCard
               key={exp.id}
-              {...exp}
+              id={exp.id}
+              title={exp.title}
+              description={exp.description}
+              image_url={exp.image_url}
+              price={exp.price}
+              location={exp.location}
+              duration={exp.duration}
+              category={exp.category}
+              niche_category={exp.niche_category}
               isWishlisted={isWishlisted(exp.id)}
               onToggleWishlist={toggleWishlist}
             />

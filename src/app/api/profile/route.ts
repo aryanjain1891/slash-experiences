@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { getProfile, updateProfile } from "@/db/queries/profiles";
+import { toSnakeCase } from "@/lib/api-utils";
 
 export async function GET() {
   try {
@@ -11,7 +12,7 @@ export async function GET() {
     }
 
     const profile = await getProfile(session.user.id);
-    return NextResponse.json(profile);
+    return NextResponse.json(profile ? toSnakeCase(profile) : null);
   } catch (error) {
     console.error("Error fetching profile:", error);
     return NextResponse.json(
@@ -39,7 +40,7 @@ export async function PUT(request: NextRequest) {
       bio,
     });
 
-    return NextResponse.json(profile);
+    return NextResponse.json(toSnakeCase(profile));
   } catch (error) {
     console.error("Error updating profile:", error);
     return NextResponse.json(

@@ -25,6 +25,12 @@ import {
   CarouselNext,
 } from "@/components/ui/carousel";
 import type { Experience } from "@/types/experience";
+import {
+  CITY_COORDINATES,
+  calculateHaversineDistance,
+  formatDistance,
+  getSelectedCity,
+} from "@/lib/location";
 
 /* ------------------------------------------------------------------ */
 /*  Animated counter – counts up on mount                             */
@@ -67,8 +73,11 @@ function AnimatedCounter({ value }: { value: string }) {
 export default function HomePage() {
   const [featuredExperiences, setFeaturedExperiences] = useState<Experience[]>([]);
   const [trendingExperiences, setTrendingExperiences] = useState<Experience[]>([]);
+  const [cityExperiences, setCityExperiences] = useState<(Experience & { _distance?: number })[]>([]);
+  const [selectedCity, setSelectedCityState] = useState<string | null>(null);
   const [isFeaturedLoading, setIsFeaturedLoading] = useState(true);
   const [isTrendingLoading, setIsTrendingLoading] = useState(true);
+  const [isCityLoading, setIsCityLoading] = useState(false);
   const { toggleWishlist, isWishlisted } = useWishlist();
 
   // Intersection observers for scroll animations
@@ -131,6 +140,49 @@ export default function HomePage() {
         console.error("Failed to load experiences:", err);
       } finally {
         setIsTrendingLoading(false);
+      }
+    })();
+  }, []);
+
+  // City-based suggestions
+  useEffect(() => {
+    const city = getSelectedCity();
+    setSelectedCityState(city);
+    if (!city) return;
+
+    const coords = CITY_COORDINATES[city];
+    if (!coords) return;
+
+    setIsCityLoading(true);
+    (async () => {
+      try {
+        const res = await fetch("/api/experiences");
+        if (res.ok) {
+          const data = await res.json();
+          const all: Experience[] = Array.isArray(data)
+            ? data
+            : data.experiences ?? [];
+
+          const withDistance = all
+            .filter((e) => e.latitude && e.longitude)
+            .map((e) => ({
+              ...e,
+              _distance: calculateHaversineDistance(
+                coords.lat,
+                coords.lng,
+                parseFloat(e.latitude!),
+                parseFloat(e.longitude!)
+              ),
+            }))
+            .sort((a, b) => a._distance - b._distance)
+            .slice(0, 6);
+
+          setCityExperiences(withDistance);
+        }
+      } catch {
+        /* ignore */
+      } finally {
+        setIsCityLoading(false);
       }
     })();
   }, []);
@@ -322,6 +374,53 @@ export default function HomePage() {
             </div>
           </div>
         </section>
+
+        {/* ============================================================ */}
+        {/*  SUGGESTED FOR YOUR CITY                                     */}
+        {/* ============================================================ */}
+        {selectedCity && (
+          <section className="py-16 bg-secondary/5">
+            <div className="container max-w-6xl mx-auto px-6 md:px-10">
+              <div className="text-center mb-12">
+                <h2 className="text-3xl md:text-4xl font-medium mb-4">
+                  Suggested for you in {selectedCity}
+                </h2>
+                <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                  Experiences near your selected city, sorted by distance
+                </p>
+              </div>
+
+              {isCityLoading ? (
+                <div className="flex justify-center items-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
+                </div>
+              ) : cityExperiences.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {cityExperiences.map((exp) => (
+                    <ExperienceCard
+                      key={exp.id}
+                      id={exp.id}
+                      title={exp.title}
+                      description={exp.description}
+                      image_url={exp.image_url}
+                      price={exp.price}
+                      location={exp.location}
+                      duration={exp.duration}
+                      category={exp.category}
+                      isWishlisted={isWishlisted(exp.id)}
+                      onToggleWishlist={toggleWishlist}
+                      distanceKm={exp._distance}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center text-muted-foreground py-8">
+                  No nearby experiences found for {selectedCity}.
+                </p>
+              )}
+            </div>
+          </section>
+        )}
 
         {/* ============================================================ */}
         {/*  WHY GIFT AN EXPERIENCE                                      */}

@@ -4,17 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import ExperienceCard from "@/components/ExperienceCard";
 import { useWishlist } from "@/contexts/WishlistContext";
-
-interface Experience {
-  id: string;
-  title: string;
-  description?: string;
-  imageUrl?: string;
-  price: number;
-  location?: string;
-  duration?: string;
-  category?: string;
-}
+import type { Experience } from "@/types/experience";
 
 export default function CategoryPage() {
   const { id } = useParams<{ id: string }>();
@@ -22,16 +12,17 @@ export default function CategoryPage() {
   const [isLoading, setIsLoading] = useState(true);
   const { toggleWishlist, isWishlisted } = useWishlist();
 
-  const categoryName = id ? decodeURIComponent(id) : "";
+  const categorySlug = id ? decodeURIComponent(id).toLowerCase() : "";
 
   useEffect(() => {
     const load = async () => {
       setIsLoading(true);
       try {
-        const res = await fetch(`/api/experiences?category=${encodeURIComponent(categoryName)}`);
+        const res = await fetch(`/api/experiences?category=${encodeURIComponent(categorySlug)}`);
         if (res.ok) {
           const data = await res.json();
-          setExperiences(data.experiences ?? []);
+          const list = Array.isArray(data) ? data : data.experiences ?? [];
+          setExperiences(list);
         }
       } catch (err) {
         console.error("Failed to load category experiences:", err);
@@ -39,13 +30,13 @@ export default function CategoryPage() {
         setIsLoading(false);
       }
     };
-    if (categoryName) load();
-  }, [categoryName]);
+    if (categorySlug) load();
+  }, [categorySlug]);
 
   return (
     <div className="container max-w-6xl mx-auto px-6 py-10">
-      <h1 className="text-3xl md:text-4xl font-bold mb-2 capitalize">{categoryName}</h1>
-      <p className="text-muted-foreground mb-8">Browse {categoryName} experiences</p>
+      <h1 className="text-3xl md:text-4xl font-bold mb-2 capitalize">{categorySlug}</h1>
+      <p className="text-muted-foreground mb-8">Browse {categorySlug} experiences</p>
 
       {isLoading ? (
         <div className="flex justify-center py-12">
@@ -56,7 +47,15 @@ export default function CategoryPage() {
           {experiences.map((exp) => (
             <ExperienceCard
               key={exp.id}
-              {...exp}
+              id={exp.id}
+              title={exp.title}
+              description={exp.description}
+              image_url={exp.image_url}
+              price={exp.price}
+              location={exp.location}
+              duration={exp.duration}
+              category={exp.category}
+              niche_category={exp.niche_category}
               isWishlisted={isWishlisted(exp.id)}
               onToggleWishlist={toggleWishlist}
             />

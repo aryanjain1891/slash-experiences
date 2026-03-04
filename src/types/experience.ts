@@ -3,7 +3,7 @@ export interface Experience {
   title: string;
   description: string | null;
   image_url: string | null;
-  price: string;
+  price: string | number;
   location: string;
   latitude: string | null;
   longitude: string | null;
@@ -17,6 +17,10 @@ export interface Experience {
   romantic: boolean | null;
   adventurous: boolean | null;
   group_activity: boolean | null;
+  tags: string | null;
+  exp_type: string | null;
+  status: string | null;
+  idtag: number | null;
   created_at: string | null;
   updated_at: string | null;
 }

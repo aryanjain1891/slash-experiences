@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Heart, HeartIcon, MapPin, Clock } from "lucide-react";
+import { Heart, HeartIcon, MapPin, Clock, Navigation } from "lucide-react";
+import { formatDistance } from "@/lib/location";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -36,9 +37,13 @@ function getValidImgSrc(src: unknown): string {
   return src.replace("/lovable-uploads/", "/assets/");
 }
 
-function parseImageUrls(imageUrl: string | null): string[] {
-  if (!imageUrl) return [];
+function parseImageUrls(imageUrl: unknown): string[] {
+  if (imageUrl == null) return [];
+  if (Array.isArray(imageUrl)) return imageUrl.map((u: unknown) => getValidImgSrc(u));
+  if (typeof imageUrl !== "string") return [];
   const trimmed = imageUrl.trim();
+  if (!trimmed) return [];
+  if (trimmed.startsWith("data:image/")) return [trimmed];
   if (trimmed.startsWith("[")) {
     try {
       const parsed = JSON.parse(trimmed);
@@ -47,7 +52,7 @@ function parseImageUrls(imageUrl: string | null): string[] {
       // fall through to comma-split
     }
   }
-  if (trimmed.includes(",")) {
+  if (trimmed.includes(",") && !trimmed.startsWith("data:")) {
     return trimmed.split(",").map((u) => getValidImgSrc(u.trim()));
   }
   return [getValidImgSrc(trimmed)];
@@ -71,6 +76,7 @@ export interface ExperienceCardProps {
   group_activity?: boolean | null;
   isWishlisted?: boolean;
   onToggleWishlist?: (id: string) => void;
+  distanceKm?: number;
 }
 
 export default function ExperienceCard({
@@ -83,6 +89,7 @@ export default function ExperienceCard({
   category,
   isWishlisted = false,
   onToggleWishlist,
+  distanceKm,
 }: ExperienceCardProps) {
   const router = useRouter();
   const images = parseImageUrls(image_url ?? null);
@@ -218,6 +225,14 @@ export default function ExperienceCard({
           <div className="flex items-center text-sm text-gray-500 mb-1">
             <Clock className="inline-block h-4 w-4 mr-1 text-gray-400 shrink-0" />
             <span>{duration}</span>
+          </div>
+        )}
+
+        {/* Distance row */}
+        {distanceKm != null && (
+          <div className="flex items-center text-sm text-gray-500 mb-1">
+            <Navigation className="inline-block h-4 w-4 mr-1 text-gray-400 shrink-0" />
+            <span>{formatDistance(distanceKm)} away</span>
           </div>
         )}
 

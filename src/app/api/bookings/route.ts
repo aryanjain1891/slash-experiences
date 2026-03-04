@@ -2,6 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { getBookingsByUser, createBooking } from "@/db/queries/bookings";
+import { toSnakeCase } from "@/lib/api-utils";
+
+function mapBooking(booking: Record<string, unknown>) {
+  const { items, ...rest } = booking;
+  const mapped = toSnakeCase(rest);
+  if (Array.isArray(items)) {
+    mapped.items = items.map((item: Record<string, unknown>) =>
+      toSnakeCase(item)
+    );
+  }
+  return mapped;
+}
 
 export async function GET() {
   try {
@@ -11,7 +23,7 @@ export async function GET() {
     }
 
     const bookings = await getBookingsByUser(session.user.id);
-    return NextResponse.json(bookings);
+    return NextResponse.json(bookings.map(mapBooking));
   } catch (error) {
     console.error("Error fetching bookings:", error);
     return NextResponse.json(
@@ -39,7 +51,7 @@ export async function POST(request: NextRequest) {
       items,
     });
 
-    return NextResponse.json(booking, { status: 201 });
+    return NextResponse.json(mapBooking(booking), { status: 201 });
   } catch (error) {
     console.error("Error creating booking:", error);
     return NextResponse.json(

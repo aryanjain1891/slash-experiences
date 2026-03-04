@@ -7,6 +7,7 @@ import {
   removeFromCart,
   clearCart,
 } from "@/db/queries/cart";
+import { toSnakeCase } from "@/lib/api-utils";
 
 export async function GET() {
   try {
@@ -16,7 +17,7 @@ export async function GET() {
     }
 
     const items = await getCart(session.user.id);
-    return NextResponse.json(items);
+    return NextResponse.json(items.map((item) => toSnakeCase(item)));
   } catch (error) {
     console.error("Error fetching cart:", error);
     return NextResponse.json(
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
       selectedTime
     );
 
-    return NextResponse.json(item, { status: 201 });
+    return NextResponse.json(toSnakeCase(item), { status: 201 });
   } catch (error) {
     console.error("Error adding to cart:", error);
     return NextResponse.json(
@@ -73,7 +74,7 @@ export async function DELETE(request: NextRequest) {
     const { id } = body;
     const item = await removeFromCart(id, session.user.id);
 
-    return NextResponse.json(item);
+    return NextResponse.json(toSnakeCase(item));
   } catch (error) {
     console.error("Error removing from cart:", error);
     return NextResponse.json(

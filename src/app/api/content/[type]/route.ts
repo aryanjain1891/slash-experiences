@@ -6,6 +6,7 @@ import {
   getCompanyPage,
   getSupportPage,
 } from "@/db/queries/content";
+import { toSnakeCase } from "@/lib/api-utils";
 
 export async function GET(
   _request: NextRequest,
@@ -17,15 +18,21 @@ export async function GET(
     switch (type) {
       case "faqs": {
         const data = await getFAQs();
-        return NextResponse.json(data);
+        return NextResponse.json(
+          data.map((row) => toSnakeCase(row))
+        );
       }
       case "testimonials": {
         const data = await getTestimonials();
-        return NextResponse.json(data);
+        return NextResponse.json(
+          data.map((row) => toSnakeCase(row))
+        );
       }
       case "press": {
         const data = await getPressReleases();
-        return NextResponse.json(data);
+        return NextResponse.json(
+          data.map((row) => toSnakeCase(row))
+        );
       }
       default: {
         if (type.startsWith("company/")) {
@@ -37,7 +44,7 @@ export async function GET(
               { status: 404 }
             );
           }
-          return NextResponse.json(page);
+          return NextResponse.json(toSnakeCase(page));
         }
 
         if (type.startsWith("support/")) {
@@ -49,7 +56,7 @@ export async function GET(
               { status: 404 }
             );
           }
-          return NextResponse.json(page);
+          return NextResponse.json(toSnakeCase(page));
         }
 
         return NextResponse.json(

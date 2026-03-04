@@ -16,6 +16,11 @@ import ExperienceCard from "@/components/ExperienceCard";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { cn } from "@/lib/utils";
 import type { Experience } from "@/types/experience";
+import {
+  FilterDialog,
+  getActiveFilterCount,
+  type FilterOptions,
+} from "@/components/FilterDialog";
 
 const SORT_OPTIONS = [
   { value: "default", label: "Featured" },
@@ -27,17 +32,17 @@ const SORT_OPTIONS = [
 type SortOrder = (typeof SORT_OPTIONS)[number]["value"];
 
 const CATEGORIES = [
-  "All",
-  "Adventure",
-  "Dining",
-  "Wellness",
-  "Luxury",
-  "Learning",
-  "Romance",
-  "Sports",
-  "Arts",
-  "Nature",
-];
+  { value: "", label: "All" },
+  { value: "adventure", label: "Adventure" },
+  { value: "dining", label: "Dining" },
+  { value: "wellness", label: "Wellness" },
+  { value: "luxury", label: "Luxury" },
+  { value: "learning", label: "Learning" },
+  { value: "sports", label: "Sports" },
+  { value: "arts", label: "Arts" },
+  { value: "music", label: "Music" },
+  { value: "technology", label: "Technology" },
+] as const;
 
 const ITEMS_PER_PAGE = 9;
 
@@ -66,12 +71,16 @@ function ExperiencesContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState(searchParam ?? "");
   const [debouncedSearch, setDebouncedSearch] = useState(searchParam ?? "");
-  const [activeCategory, setActiveCategory] = useState(categoryParam ?? "");
+  const [activeCategory, setActiveCategory] = useState(
+    categoryParam?.toLowerCase() ?? ""
+  );
   const [sortOrder, setSortOrder] = useState<SortOrder>("default");
   const [currentPage, setCurrentPage] = useState(
     pageParam ? parseInt(pageParam, 10) : 1
   );
   const [showSortMenu, setShowSortMenu] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState<FilterOptions | null>(null);
   const { toggleWishlist, isWishlisted } = useWishlist();
 
   // Debounce search input
@@ -87,13 +96,48 @@ function ExperiencesContent() {
       try {
         const params = new URLSearchParams();
         if (debouncedSearch) params.set("search", debouncedSearch);
-        if (activeCategory && activeCategory !== "All")
-          params.set("category", activeCategory);
+        if (activeCategory) params.set("category", activeCategory);
+        if (advancedFilters) {
+          if (advancedFilters.priceRange[0] > 0)
+            params.set("minPrice", String(advancedFilters.priceRange[0]));
+          if (advancedFilters.priceRange[1] < 100000)
+            params.set("maxPrice", String(advancedFilters.priceRange[1]));
+          if (advancedFilters.location)
+            params.set("location", advancedFilters.location);
+        }
 
         const res = await fetch(`/api/experiences?${params.toString()}`);
         if (res.ok) {
           const data = await res.json();
-          const list = Array.isArray(data) ? data : data.experiences ?? [];
+          let list: Experience[] = Array.isArray(data) ? data : data.experiences ?? [];
+
+          if (advancedFilters) {
+            if (advancedFilters.categories.length > 0) {
+              const lowerCats = advancedFilters.categories.map((c) =>
+                c.toLowerCase()
+              );
+              list = list.filter((e) =>
+                lowerCats.includes(e.category?.toLowerCase())
+              );
+            }
+            if (advancedFilters.locations.length > 0) {
+              const lowerLocs = advancedFilters.locations.map((l) =>
+                l.toLowerCase()
+              );
+              list = list.filter((e) =>
+                lowerLocs.some((l) =>
+                  e.location?.toLowerCase().includes(l)
+                )
+              );
+            }
+            const et = advancedFilters.experienceTypes;
+            if (et.romantic) list = list.filter((e) => e.romantic);
+            if (et.adventurous) list = list.filter((e) => e.adventurous);
+            if (et.group) list = list.filter((e) => e.group_activity);
+            if (et.trending) list = list.filter((e) => e.trending);
+            if (et.featured) list = list.filter((e) => e.featured);
+          }
+
           setAllExperiences(list);
         }
       } catch (err) {
@@ -103,7 +147,7 @@ function ExperiencesContent() {
       }
     };
     fetchExperiences();
-  }, [debouncedSearch, activeCategory]);
+  }, [debouncedSearch, activeCategory, advancedFilters]);
 
   // Reset page on filter change
   useEffect(() => {
@@ -116,12 +160,12 @@ function ExperiencesContent() {
     switch (sortOrder) {
       case "price-low":
         sorted.sort(
-          (a, b) => (parseFloat(a.price) || 0) - (parseFloat(b.price) || 0)
+          (a, b) => (Number(a.price) || 0) - (Number(b.price) || 0)
         );
         break;
       case "price-high":
         sorted.sort(
-          (a, b) => (parseFloat(b.price) || 0) - (parseFloat(a.price) || 0)
+          (a, b) => (Number(b.price) || 0) - (Number(a.price) || 0)
         );
         break;
       case "newest":
@@ -142,9 +186,8 @@ function ExperiencesContent() {
     currentPage * ITEMS_PER_PAGE
   );
 
-  const handleCategoryClick = (cat: string) => {
-    const newCat = cat === "All" ? "" : cat;
-    setActiveCategory(newCat);
+  const handleCategoryClick = (value: string) => {
+    setActiveCategory(value);
   };
 
   const clearAllFilters = () => {
@@ -153,10 +196,12 @@ function ExperiencesContent() {
     setActiveCategory("");
     setSortOrder("default");
     setCurrentPage(1);
+    setAdvancedFilters(null);
   };
 
+  const activeFilterCount = getActiveFilterCount(advancedFilters);
   const hasActiveFilters =
-    debouncedSearch || activeCategory || sortOrder !== "default";
+    debouncedSearch || activeCategory || sortOrder !== "default" || activeFilterCount > 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -194,18 +239,13 @@ function ExperiencesContent() {
         <div className="flex flex-wrap gap-2 mb-6">
           {CATEGORIES.map((cat) => (
             <Button
-              key={cat}
-              variant={
-                activeCategory === cat ||
-                (cat === "All" && !activeCategory)
-                  ? "default"
-                  : "outline"
-              }
+              key={cat.value}
+              variant={activeCategory === cat.value ? "default" : "outline"}
               size="sm"
-              onClick={() => handleCategoryClick(cat)}
+              onClick={() => handleCategoryClick(cat.value)}
               className="rounded-full"
             >
-              {cat}
+              {cat.label}
             </Button>
           ))}
         </div>
@@ -219,6 +259,22 @@ function ExperiencesContent() {
           </h2>
 
           <div className="flex items-center gap-3">
+            {/* Filter button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setFilterOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <Filter className="h-4 w-4" />
+              Filters
+              {activeFilterCount > 0 && (
+                <span className="ml-1 inline-flex items-center justify-center w-5 h-5 text-xs font-bold rounded-full bg-primary text-primary-foreground">
+                  {activeFilterCount}
+                </span>
+              )}
+            </Button>
+
             {/* Sort dropdown */}
             <div className="relative">
               <Button
@@ -283,16 +339,13 @@ function ExperiencesContent() {
                 key={exp.id}
                 id={exp.id}
                 title={exp.title}
-                description={exp.description ?? undefined}
-                image_url={
-                  typeof exp.image_url === "string"
-                    ? exp.image_url
-                    : undefined
-                }
-                price={parseFloat(exp.price) || 0}
+                description={exp.description}
+                image_url={exp.image_url}
+                price={exp.price}
                 location={exp.location}
                 duration={exp.duration}
                 category={exp.category}
+                niche_category={exp.niche_category}
                 isWishlisted={isWishlisted(exp.id)}
                 onToggleWishlist={toggleWishlist}
               />
@@ -365,6 +418,12 @@ function ExperiencesContent() {
             </Button>
           </div>
         )}
+        <FilterDialog
+          isOpen={filterOpen}
+          onClose={() => setFilterOpen(false)}
+          onApply={setAdvancedFilters}
+          initialFilters={advancedFilters}
+        />
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ import {
   toggleWishlist,
   getWishlistCount,
 } from "@/db/queries/wishlist";
+import { toSnakeCase } from "@/lib/api-utils";
 
 export async function GET() {
   try {
@@ -19,7 +20,10 @@ export async function GET() {
       getWishlistCount(session.user.id),
     ]);
 
-    return NextResponse.json({ items, count });
+    return NextResponse.json({
+      items: items.map((item) => toSnakeCase(item)),
+      count,
+    });
   } catch (error) {
     console.error("Error fetching wishlist:", error);
     return NextResponse.json(

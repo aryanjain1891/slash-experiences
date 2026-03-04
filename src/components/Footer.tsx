@@ -18,11 +18,11 @@ const footerLinks = [
     title: "Experiences",
     links: [
       { name: "All Experiences", href: "/experiences" },
-      { name: "Adventure", href: "/experiences?category=Adventure" },
-      { name: "Dining", href: "/experiences?category=Dining" },
-      { name: "Wellness", href: "/experiences?category=Wellness" },
-      { name: "Luxury", href: "/experiences?category=Luxury" },
-      { name: "Learning", href: "/experiences?category=Learning" },
+      { name: "Adventure", href: "/experiences?category=adventure" },
+      { name: "Dining", href: "/experiences?category=dining" },
+      { name: "Wellness", href: "/experiences?category=wellness" },
+      { name: "Luxury", href: "/experiences?category=luxury" },
+      { name: "Learning", href: "/experiences?category=learning" },
     ],
   },
   {

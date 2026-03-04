@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getExperienceById } from "@/db/queries/experiences";
+import { mapExperience } from "@/lib/api-utils";
 
 export async function GET(
   _request: NextRequest,
@@ -16,7 +17,7 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(experience);
+    return NextResponse.json({ experience: mapExperience(experience) });
   } catch (error) {
     console.error("Error fetching experience:", error);
     return NextResponse.json(

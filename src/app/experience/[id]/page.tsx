@@ -29,6 +29,7 @@ import { cn } from "@/lib/utils";
 import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTrackExperienceView } from "@/hooks/useTrackExperienceView";
 import ExperienceCard from "@/components/ExperienceCard";
 import type { Experience } from "@/types/experience";
 
@@ -75,6 +76,8 @@ export default function ExperienceDetailPage() {
   const [isCartLoading, setIsCartLoading] = useState(false);
   const [currentImageIdx, setCurrentImageIdx] = useState(0);
   const [mapReady, setMapReady] = useState(false);
+
+  useTrackExperienceView(user?.id, id);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -151,7 +154,7 @@ export default function ExperienceDetailPage() {
         id: experience.id,
         experienceId: experience.id,
         title: experience.title,
-        price: parseFloat(experience.price) || 0,
+        price: parseFloat(String(experience.price)) || 0,
         imageUrl: getValidImgSrc(experience.image_url),
       });
       toast.success("Added to cart!");
@@ -179,7 +182,7 @@ export default function ExperienceDetailPage() {
   const lat = experience?.latitude ? parseFloat(experience.latitude) : null;
   const lng = experience?.longitude ? parseFloat(experience.longitude) : null;
   const hasCoords = lat !== null && lng !== null && !isNaN(lat) && !isNaN(lng);
-  const priceNum = experience ? parseFloat(experience.price) || 0 : 0;
+  const priceNum = experience ? parseFloat(String(experience.price)) || 0 : 0;
 
   if (loading) {
     return (

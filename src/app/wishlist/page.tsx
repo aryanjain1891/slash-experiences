@@ -8,17 +8,7 @@ import ExperienceCard from "@/components/ExperienceCard";
 import { Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-
-interface Experience {
-  id: string;
-  title: string;
-  description?: string;
-  imageUrl?: string;
-  price: number;
-  location?: string;
-  duration?: string;
-  category?: string;
-}
+import type { Experience } from "@/types/experience";
 
 export default function WishlistPage() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -68,7 +58,15 @@ export default function WishlistPage() {
           {experiences.map((exp) => (
             <ExperienceCard
               key={exp.id}
-              {...exp}
+              id={exp.id}
+              title={exp.title}
+              description={exp.description}
+              image_url={exp.image_url}
+              price={exp.price}
+              location={exp.location}
+              duration={exp.duration}
+              category={exp.category}
+              niche_category={exp.niche_category}
               isWishlisted={isWishlisted(exp.id)}
               onToggleWishlist={toggleWishlist}
             />
