@@ -1,10 +1,9 @@
 import { betterAuth } from "better-auth";
-import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { db } from "@/db";
+import { Pool } from "@neondatabase/serverless";
 
 export const auth = betterAuth({
-  database: drizzleAdapter(db, {
-    provider: "pg",
+  database: new Pool({
+    connectionString: process.env.DATABASE_URL!,
   }),
   socialProviders: {
     google: {
@@ -13,7 +12,7 @@ export const auth = betterAuth({
     },
   },
   session: {
-    expiresIn: 60 * 60 * 24 * 7, // 7 days
-    updateAge: 60 * 60 * 24, // 1 day
+    expiresIn: 60 * 60 * 24 * 7,
+    updateAge: 60 * 60 * 24,
   },
 });
