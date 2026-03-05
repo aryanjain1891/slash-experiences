@@ -22,6 +22,20 @@ A plain-English guide to how the app works, how to run it, and how to deploy it.
 
 ---
 
+## Image Strategy
+
+All experience images use **Unsplash CDN URLs** stored directly in the database. Each experience's `image_url` field contains a stable Unsplash URL at 800px width (e.g., `https://images.unsplash.com/photo-...?w=800`). This approach provides:
+
+- **No self-hosted images** — no storage costs, no upload pipeline, no image optimization needed
+- **High quality** — Unsplash photos are professionally shot and curated
+- **Stable URLs** — Unsplash CDN URLs don't expire or change
+- **Consistent sizing** — all images requested at `w=800` for uniform display
+- **Fast loading** — served from Unsplash's global CDN with proper cache headers
+
+The `ExperienceCard` and experience detail page read the `image_url` field directly. A `getValidImgSrc` helper handles edge cases (JSON-encoded arrays of URLs, null values) and falls back to a placeholder image.
+
+---
+
 ## How Data Flows
 
 ```
@@ -108,6 +122,7 @@ slash-experiences/
 │   │   ├── ai-suggestions/page.tsx   # AI Suggestions placeholder
 │   │   ├── profile/page.tsx          # User profile + tabs
 │   │   ├── wishlist/page.tsx         # Wishlist page
+│   │   ├── cart/page.tsx             # Cart page (quantity controls, checkout)
 │   │   ├── contact/page.tsx          # Contact form
 │   │   ├── faq/page.tsx              # FAQ page
 │   │   ├── testimonials/page.tsx     # Testimonials
@@ -122,7 +137,7 @@ slash-experiences/
 │   │       ├── experiences/route.ts        # GET experiences (list, search, filter)
 │   │       ├── experiences/[id]/route.ts   # GET single experience
 │   │       ├── wishlist/route.ts           # GET/POST wishlist
-│   │       ├── cart/route.ts               # GET/POST/DELETE cart
+│   │       ├── cart/route.ts               # GET/POST/PATCH/DELETE cart
 │   │       ├── bookings/route.ts           # GET/POST bookings
 │   │       ├── profile/route.ts            # GET/PUT profile
 │   │       ├── views/route.ts              # POST track view
@@ -174,7 +189,7 @@ slash-experiences/
 │   │   └── queries/                  # Query functions
 │   │       ├── experiences.ts        # searchExperiences
 │   │       ├── wishlist.ts           # getWishlist, toggleWishlist, getWishlistCount
-│   │       ├── cart.ts               # getCart, addToCart, removeFromCart, clearCart
+│   │       ├── cart.ts               # getCart, addToCart, updateCartItem, removeFromCart, clearCart
 │   │       ├── bookings.ts           # getBookingsByUser, createBooking
 │   │       ├── payments.ts           # createPayment, updatePaymentStatus
 │   │       ├── profiles.ts           # getProfile, updateProfile
@@ -201,17 +216,18 @@ slash-experiences/
 │
 ├── public/                           # Static assets (images, favicon, etc.)
 ├── docs/                             # This documentation
-│   ├── FEATURES.md                   # Complete feature list (27 features)
+│   ├── FEATURES.md                   # Complete feature list (28 features)
 │   ├── ARCHITECTURE.md               # This file
-│   └── CODE_REVIEW.md                # Code review issues
+│   ├── CODE_REVIEW.md                # Code review issues
+│   ├── DEFERRED.md                   # Deferred features + deferred code review items
+│   └── IDEAS.md                      # Ideas and reminders
 │
 ├── .env.example                      # Environment variable template
 ├── drizzle.config.ts                 # Drizzle ORM config
 ├── next.config.ts                    # Next.js config
 ├── tailwind.config.ts                # Tailwind CSS config
 ├── tsconfig.json                     # TypeScript config
-├── package.json                      # Dependencies
-└── DEFERRED.md                       # Deferred features (swipe, admin, social, etc.)
+└── package.json                      # Dependencies
 ```
 
 ---

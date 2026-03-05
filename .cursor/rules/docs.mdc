@@ -1,0 +1,13 @@
+---
+description: Keep documentation in sync
+globs: ["src/**", "docs/**"]
+---
+
+After making changes to the codebase:
+1. Update docs/FEATURES.md if features were added, changed, or removed
+2. Update docs/CODE_REVIEW.md if bugs were fixed or new issues found
+3. Update docs/DEFERRED.md if items were deferred or completed
+4. Update docs/ARCHITECTURE.md if the tech stack or data flow changed
+5. Update docs/IDEAS.md if new ideas or reminders came up
+
+All docs in docs/ are living documents that must stay in sync with the code.

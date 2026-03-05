@@ -63,7 +63,7 @@ export default function ProfilePage() {
   const [editForm, setEditForm] = useState<ProfileData>({});
   const [isSaving, setIsSaving] = useState(false);
 
-  const [wishlistItems, setWishlistItems] = useState<Experience[]>([]);
+  const [wishlistItems, setWishlistItems] = useState<(Experience & { experience_id?: string })[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [viewedItems, setViewedItems] = useState<Experience[]>([]);
   const [wishlistCount, setWishlistCount] = useState(0);
@@ -135,7 +135,10 @@ export default function ProfilePage() {
         for (const eid of savedIds) {
           try {
             const res = await fetch(`/api/experiences/${eid}`);
-            if (res.ok) results.push(await res.json());
+            if (res.ok) {
+              const data = await res.json();
+              results.push(data.experience ?? data);
+            }
           } catch { /* skip failed */ }
         }
         setSavedItems(results);
@@ -311,20 +314,23 @@ export default function ProfilePage() {
               </div>
             ) : wishlistItems.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {wishlistItems.map((exp) => (
-                  <ExperienceCard
-                    key={exp.id}
-                    id={exp.id}
-                    title={exp.title}
-                    image_url={exp.image_url}
-                    price={exp.price}
-                    location={exp.location}
-                    duration={exp.duration}
-                    category={exp.category}
-                    isWishlisted={true}
-                    onToggleWishlist={toggleWishlist}
-                  />
-                ))}
+                {wishlistItems.map((exp) => {
+                  const expId = exp.experience_id || exp.id;
+                  return (
+                    <ExperienceCard
+                      key={expId}
+                      id={expId}
+                      title={exp.title}
+                      image_url={exp.image_url}
+                      price={exp.price}
+                      location={exp.location}
+                      duration={exp.duration}
+                      category={exp.category}
+                      isWishlisted={isWishlisted(expId)}
+                      onToggleWishlist={toggleWishlist}
+                    />
+                  );
+                })}
               </div>
             ) : (
               <Card>

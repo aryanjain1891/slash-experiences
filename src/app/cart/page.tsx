@@ -13,8 +13,16 @@ import RazorpayPayment from "@/components/RazorpayPayment";
 
 function getValidImgSrc(src: unknown): string {
   if (!src) return "/assets/placeholder.jpg";
-  if (typeof src === "string") return src;
-  return "/assets/placeholder.jpg";
+  if (Array.isArray(src)) return getValidImgSrc(src[0]);
+  if (typeof src !== "string") return "/assets/placeholder.jpg";
+  const trimmed = src.trim();
+  if (trimmed.startsWith("[")) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed) && parsed.length > 0) return getValidImgSrc(parsed[0]);
+    } catch { /* fall through */ }
+  }
+  return trimmed || "/assets/placeholder.jpg";
 }
 
 export default function CartPage() {

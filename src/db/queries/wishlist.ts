@@ -14,6 +14,7 @@ export async function getWishlist(userId: string) {
       price: experiences.price,
       imageUrl: experiences.imageUrl,
       location: experiences.location,
+      duration: experiences.duration,
       category: experiences.category,
     })
     .from(wishlists)

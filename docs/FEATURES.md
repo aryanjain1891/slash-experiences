@@ -1,6 +1,6 @@
 # Slash Experiences — Feature List
 
-> 27 features across 10 categories. Each entry lists what it does, the files that implement it, the API endpoints it hits, the database tables it touches, and its current status.
+> 28 features across 10 categories. Each entry lists what it does, the files that implement it, the API endpoints it hits, the database tables it touches, and its current status.
 
 ---
 
@@ -71,11 +71,11 @@
 - `src/app/experiences/type/[type]/page.tsx` — type page
 
 **API endpoints:**
-- `GET /api/experiences?type={type}` — **Note:** sends `?type=` but the API route expects `?expType=` (see CODE_REVIEW.md #22)
+- `GET /api/experiences?expType={type}`
 
 **Database tables:** `experiences`
 
-**Status:** Live (has a param mismatch bug)
+**Status:** Live
 
 ---
 
@@ -145,18 +145,40 @@
 
 ### 8. Cart
 
-**What it does:** Authenticated users can add experiences to a cart with a selected date and quantity. The cart context manages local state and syncs with the server. Items can be removed individually or cleared entirely.
+**What it does:** Authenticated users can add experiences to a cart with a selected date and quantity. The cart context manages local state and syncs with the server. Items can be removed individually, updated in-place via PATCH, or cleared entirely.
 
 **Files:**
-- `src/contexts/CartContext.tsx` — context provider
-- `src/app/api/cart/route.ts` — GET (list), POST (add), DELETE (remove/clear)
-- `src/db/queries/cart.ts` — `getCart`, `addToCart`, `removeFromCart`, `clearCart`
+- `src/contexts/CartContext.tsx` — context provider, uses PATCH for quantity updates
+- `src/app/api/cart/route.ts` — GET (list), POST (add), PATCH (update quantity), DELETE (remove/clear)
+- `src/db/queries/cart.ts` — `getCart`, `addToCart`, `updateCartItem`, `removeFromCart`, `clearCart`
 - `src/components/Navbar.tsx` — cart icon with count badge
 
 **API endpoints:**
 - `GET /api/cart` — returns cart items
 - `POST /api/cart` — body: `{ experienceId, quantity, selectedDate, selectedTime }`
+- `PATCH /api/cart` — body: `{ id, quantity }` (update quantity in-place)
 - `DELETE /api/cart` — body: `{ id }` or `?clear=true`
+
+**Database tables:** `cart_items`, `experiences` (joined)
+
+**Status:** Live
+
+---
+
+### 8b. Cart Page
+
+**What it does:** A dedicated `/cart` page showing all cart items with full UI. Each item displays the experience image, title, price, selected date, and quantity controls (increment/decrement buttons). Users can remove individual items or clear the entire cart. The page shows a price breakdown with subtotal and total, and integrates the `RazorpayPayment` component for checkout. Unauthenticated users are redirected to sign in.
+
+**Files:**
+- `src/app/cart/page.tsx` — cart page with quantity controls and Razorpay checkout
+- `src/contexts/CartContext.tsx` — provides `items`, `updateQuantity`, `removeFromCart`, `clearCart`
+- `src/components/RazorpayPayment.tsx` — checkout component
+
+**API endpoints:**
+- `GET /api/cart` — fetch cart items
+- `PATCH /api/cart` — update item quantity
+- `DELETE /api/cart` — remove item or clear cart
+- `POST /api/payment/create-order` — create Razorpay order at checkout
 
 **Database tables:** `cart_items`, `experiences` (joined)
 
@@ -363,7 +385,7 @@
 
 **Database tables:** `faqs`
 
-**Status:** Live (has response shape mismatch — API returns array, page expects `{ items }`)
+**Status:** Live
 
 ---
 
@@ -381,7 +403,7 @@
 
 **Database tables:** `testimonials`
 
-**Status:** Live (has response shape mismatch — see CODE_REVIEW.md)
+**Status:** Live
 
 ---
 
@@ -399,7 +421,7 @@
 
 **Database tables:** `press_releases`
 
-**Status:** Live (has response shape mismatch — see CODE_REVIEW.md)
+**Status:** Live
 
 ---
 
@@ -461,7 +483,7 @@
 
 **Files:**
 - `src/components/Navbar.tsx` — `LocationDropdownContent` component, city list (~200 cities)
-- `src/lib/location.ts` — `CITY_COORDINATES` (35 cities with lat/lng), `calculateHaversineDistance`, `getSelectedCity`, `setSelectedCity`
+- `src/lib/location.ts` — `CITY_COORDINATES` (80+ cities with lat/lng), `calculateHaversineDistance`, `getSelectedCity`, `setSelectedCity`
 - `src/app/page.tsx` — city-based suggestions section
 
 **API endpoints:** None (client-side localStorage + distance calculation)

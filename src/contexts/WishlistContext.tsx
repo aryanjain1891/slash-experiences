@@ -7,7 +7,7 @@ interface WishlistContextType {
   wishlistCount: number;
   wishlistedIds: Set<string>;
   isLoading: boolean;
-  toggleWishlist: (experienceId: string) => Promise<void>;
+  toggleWishlist: (experienceId: string) => Promise<{ added: boolean }>;
   refreshCount: () => Promise<void>;
   isWishlisted: (experienceId: string) => boolean;
 }
@@ -44,16 +44,18 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
   }, [refreshCount]);
 
   const toggleWishlist = async (experienceId: string) => {
-    try {
-      const res = await fetch("/api/wishlist", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ experienceId }),
-      });
-      if (res.ok) await refreshCount();
-    } catch (err) {
-      console.error("Failed to toggle wishlist:", err);
+    const res = await fetch("/api/wishlist", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ experienceId }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || "Failed to toggle wishlist");
     }
+    const result = await res.json();
+    await refreshCount();
+    return result as { added: boolean };
   };
 
   const isWishlisted = (experienceId: string) => wishlistedIds.has(experienceId);

@@ -94,7 +94,7 @@ export default function ExperienceDetailPage() {
   const router = useRouter();
   const { addToCart } = useCart();
   const { toggleWishlist, isWishlisted } = useWishlist();
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const { isSaved, toggleSaved } = useSavedExperiences();
 
   const [experience, setExperience] = useState<Experience | null>(null);
@@ -162,8 +162,20 @@ export default function ExperienceDetailPage() {
   const imageUrls = useMemo(() => {
     if (!experience) return [];
     const raw = experience.image_url;
-    if (Array.isArray(raw)) return raw.filter(Boolean) as string[];
-    if (typeof raw === "string" && raw) return [raw];
+    if (Array.isArray(raw)) return raw.filter(Boolean).map((u) => getValidImgSrc(u));
+    if (typeof raw === "string" && raw) {
+      const trimmed = raw.trim();
+      if (trimmed.startsWith("[")) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          if (Array.isArray(parsed)) return parsed.map((u: unknown) => getValidImgSrc(u));
+        } catch { /* fall through */ }
+      }
+      if (trimmed.includes(",") && !trimmed.startsWith("data:")) {
+        return trimmed.split(",").map((u) => getValidImgSrc(u.trim()));
+      }
+      return [getValidImgSrc(trimmed)];
+    }
     return ["/assets/placeholder.jpg"];
   }, [experience]);
 
@@ -174,6 +186,10 @@ export default function ExperienceDetailPage() {
 
   const handleAddToCart = async () => {
     if (!experience) return;
+    if (!isAuthenticated) {
+      toast.error("Please sign in to add items to your cart.");
+      return;
+    }
     if (!selectedDate) {
       toast.error("Please select a date before adding to cart.");
       return;
@@ -195,13 +211,13 @@ export default function ExperienceDetailPage() {
 
   const handleToggleWishlist = async () => {
     if (!experience) return;
+    if (!isAuthenticated) {
+      toast.error("Please sign in to manage your wishlist.");
+      return;
+    }
     try {
-      await toggleWishlist(experience.id);
-      toast.success(
-        isWishlisted(experience.id)
-          ? "Removed from wishlist"
-          : "Added to wishlist"
-      );
+      const result = await toggleWishlist(experience.id);
+      toast.success(result.added ? "Added to wishlist" : "Removed from wishlist");
     } catch {
       toast.error("Failed to update wishlist.");
     }

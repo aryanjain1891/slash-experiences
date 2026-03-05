@@ -62,42 +62,42 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [fetchCart]);
 
   const addToCart = async ({ experienceId, quantity, selectedDate, selectedTime }: AddToCartParams) => {
-    try {
-      const res = await fetch("/api/cart", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ experienceId, quantity: quantity ?? 1, selectedDate, selectedTime }),
-      });
-      if (res.ok) await fetchCart();
-    } catch (err) {
-      console.error("Failed to add to cart:", err);
+    const res = await fetch("/api/cart", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ experienceId, quantity: quantity ?? 1, selectedDate, selectedTime }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || "Failed to add to cart");
     }
+    await fetchCart();
   };
 
   const removeFromCart = async (id: string) => {
-    try {
-      const res = await fetch("/api/cart", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
-      });
-      if (res.ok) await fetchCart();
-    } catch (err) {
-      console.error("Failed to remove from cart:", err);
+    const res = await fetch("/api/cart", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || "Failed to remove from cart");
     }
+    await fetchCart();
   };
 
   const updateQuantity = async (id: string, quantity: number) => {
-    try {
-      const res = await fetch("/api/cart", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, quantity }),
-      });
-      if (res.ok) await fetchCart();
-    } catch (err) {
-      console.error("Failed to update cart:", err);
+    const res = await fetch("/api/cart", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, quantity }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || "Failed to update cart");
     }
+    await fetchCart();
   };
 
   const clearCart = async () => {

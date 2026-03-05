@@ -76,7 +76,7 @@ export interface ExperienceCardProps {
   adventurous?: boolean | null;
   group_activity?: boolean | null;
   isWishlisted?: boolean;
-  onToggleWishlist?: (id: string) => void;
+  onToggleWishlist?: (id: string) => void | Promise<unknown>;
   distanceKm?: number;
 }
 
@@ -115,10 +115,14 @@ export default function ExperienceCard({
     router.push(`/experience/${id}`);
   };
 
-  const handleToggleWishlist = (e: React.MouseEvent) => {
+  const handleToggleWishlist = async (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    onToggleWishlist?.(id);
+    try {
+      await onToggleWishlist?.(id);
+    } catch {
+      /* handled by caller context */
+    }
   };
 
   return (

@@ -38,7 +38,7 @@ Issues found during code review, sorted by severity. Each entry includes the fil
 
 **Suggested fix:** Add authentication checks. Implement rate limiting (e.g., via Vercel Edge middleware or in-memory rate limiter). Consider caching suggestions per session.
 
-**Status:** FIXED — Both routes already validate session_id and verify session exists in DB before LLM calls. k parameter clamped to max 20 (see #14).
+**Status:** PARTIALLY FIXED — Session validation added (both routes verify session_id exists in DB before LLM calls). k parameter clamped to max 20 (see #14). Full rate limiting (per-IP or per-session throttling) is not yet implemented.
 
 ---
 
@@ -50,7 +50,7 @@ Issues found during code review, sorted by severity. Each entry includes the fil
 
 **Suggested fix:** Use the same connection strategy throughout. Either use the HTTP driver everywhere or the Pool driver everywhere. For Vercel serverless, the HTTP driver (`neon()`) is generally recommended.
 
-**Status:** DEFERRED — The Pool connection in auth.ts works for Better Auth's needs. Architectural change deferred.
+**Status:** DEFERRED — Pool works correctly for Better Auth's needs; refactoring to a single connection strategy would risk breaking auth. Revisit if connection issues arise in production.
 
 ---
 
@@ -154,7 +154,7 @@ Issues found during code review, sorted by severity. Each entry includes the fil
 
 **Suggested fix:** Add a Subresource Integrity (SRI) hash to the script tag. This is a defense-in-depth measure against CDN compromise.
 
-**Status:** DEFERRED — Requires looking up the current SRI hash for the Razorpay script, which changes with versions.
+**Status:** DEFERRED — Needs Razorpay's current script hash, which changes with versions. Low risk since the script is loaded from Razorpay's own CDN.
 
 ---
 
@@ -204,7 +204,7 @@ Issues found during code review, sorted by severity. Each entry includes the fil
 
 **Suggested fix:** Choose one casing convention and use it consistently. Since the frontend type is snake_case, the `toSnakeCase` approach works but should be applied uniformly. Consider using Drizzle's built-in casing option instead.
 
-**Status:** DEFERRED — Architectural decision; toSnakeCase approach works consistently for now.
+**Status:** DEFERRED — The toSnakeCase approach works consistently. Changing the casing convention would require touching all files that consume API responses. Not worth the risk for no functional benefit.
 
 ---
 
@@ -216,7 +216,7 @@ Issues found during code review, sorted by severity. Each entry includes the fil
 
 **Suggested fix:** No immediate action needed — these are documented in `DEFERRED.md`. Consider adding a comment in the schema marking them as unused/planned.
 
-**Status:** DEFERRED — Already documented in DEFERRED.md. No action needed.
+**Status:** DEFERRED — Tables kept for future features documented in DEFERRED.md (admin panel, social features, gamification). Removing them would lose the schema definitions needed later.
 
 ---
 
@@ -240,7 +240,7 @@ Issues found during code review, sorted by severity. Each entry includes the fil
 
 **Suggested fix:** Consider adding a "clear on logout" hook. The current implementation with a 10-item cap is reasonable for most cases.
 
-**Status:** DEFERRED — Current implementation is reasonable; no change needed.
+**Status:** DEFERRED — The 10-item cap is reasonable for most users. Clear-on-logout is a nice-to-have but not a security risk. Revisit if user privacy requirements change.
 
 ---
 
@@ -308,11 +308,11 @@ Issues found during code review, sorted by severity. Each entry includes the fil
 
 ## Summary
 
-| Severity | Count | Fixed | Deferred | Description |
-|----------|-------|-------|----------|-------------|
-| CRITICAL | 5 | 4 | 1 | Auth bypass on payments (FIXED), AI rate limiting (FIXED), connection mismatch (DEFERRED), cart race condition (FIXED) |
-| HIGH | 5 | 5 | 0 | Param mismatch (FIXED), response shape mismatches (FIXED), interface mismatches (FIXED), double-fetch (FIXED) |
-| MEDIUM | 5 | 4 | 1 | Input sanitization (FIXED), SRI (DEFERRED), addToCart shape (FIXED), k limit (FIXED), error boundaries (FIXED) |
-| LOW | 5 | 2 | 3 | Casing (DEFERRED), unused tables (DEFERRED), city coords (FIXED), localStorage (DEFERRED), useEffect deps (FIXED) |
-| OTHER | 3 | 3 | 0 | Navbar overlap (FIXED), duplicates of #6 and #7 (FIXED) |
-| **Total** | **23** | **18** | **5** |
+| Severity | Count | Fixed | Partial | Deferred | Description |
+|----------|-------|-------|---------|----------|-------------|
+| CRITICAL | 5 | 3 | 1 | 1 | Auth bypass on payments (FIXED), AI rate limiting (PARTIALLY FIXED), connection mismatch (DEFERRED), cart race condition (FIXED) |
+| HIGH | 5 | 5 | 0 | 0 | Param mismatch (FIXED), response shape mismatches (FIXED), interface mismatches (FIXED), double-fetch (FIXED) |
+| MEDIUM | 5 | 4 | 0 | 1 | Input sanitization (FIXED), SRI (DEFERRED), addToCart shape (FIXED), k limit (FIXED), error boundaries (FIXED) |
+| LOW | 5 | 2 | 0 | 3 | Casing (DEFERRED), unused tables (DEFERRED), city coords (FIXED), localStorage (DEFERRED), useEffect deps (FIXED) |
+| OTHER | 3 | 3 | 0 | 0 | Navbar overlap (FIXED), duplicates of #6 and #7 (FIXED) |
+| **Total** | **23** | **17** | **1** | **5** |
