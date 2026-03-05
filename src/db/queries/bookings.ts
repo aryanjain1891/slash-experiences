@@ -36,6 +36,7 @@ export async function createBooking(data: {
   userId: string;
   totalAmount: string;
   paymentMethod: string;
+  status?: string;
   notes?: string;
   items: {
     experienceId: string;
@@ -49,6 +50,7 @@ export async function createBooking(data: {
       userId: data.userId,
       totalAmount: data.totalAmount,
       paymentMethod: data.paymentMethod,
+      status: data.status ?? "confirmed",
       notes: data.notes,
     })
     .returning();
