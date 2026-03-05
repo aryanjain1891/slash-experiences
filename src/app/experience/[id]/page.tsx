@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -39,7 +39,7 @@ import "leaflet/dist/leaflet.css";
 
 const MapContainer = dynamic(
   () => import("react-leaflet").then((m) => m.MapContainer),
-  { ssr: false }
+  { ssr: false, loading: () => <div className="h-[300px] w-full bg-muted animate-pulse rounded-xl" /> }
 );
 const TileLayer = dynamic(
   () => import("react-leaflet").then((m) => m.TileLayer),
@@ -63,6 +63,32 @@ function getValidImgSrc(src: unknown): string {
   return src;
 }
 
+class MapErrorBoundary extends React.Component<
+  { children: React.ReactNode; onError?: () => void },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode; onError?: () => void }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch() {
+    this.props.onError?.();
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="h-[300px] w-full flex items-center justify-center bg-muted rounded-xl">
+          <p className="text-muted-foreground">Map could not be loaded.</p>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function ExperienceDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -79,12 +105,13 @@ export default function ExperienceDetailPage() {
   const [isCartLoading, setIsCartLoading] = useState(false);
   const [currentImageIdx, setCurrentImageIdx] = useState(0);
   const [mapReady, setMapReady] = useState(false);
+  const [mapError, setMapError] = useState(false);
 
   useTrackExperienceView(user?.id, id);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- intentional mount-only scroll
 
   useEffect(() => {
     if (!id) return;
@@ -130,7 +157,7 @@ export default function ExperienceDetailPage() {
 
   useEffect(() => {
     setMapReady(true);
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- mount-only: enable map after hydration
 
   const imageUrls = useMemo(() => {
     if (!experience) return [];
@@ -436,22 +463,24 @@ export default function ExperienceDetailPage() {
           </div>
 
           {/* Map */}
-          {hasCoords && mapReady && (
+          {hasCoords && mapReady && !mapError && (
             <div className="w-full rounded-xl overflow-hidden mb-8 shadow-md">
               <h2 className="text-xl font-medium mb-4">Location</h2>
               <div className="h-[300px] w-full">
-                <MapContainer
-                  center={[lat!, lng!]}
-                  zoom={13}
-                  scrollWheelZoom={false}
-                  style={{ height: "100%", width: "100%" }}
-                >
-                  <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  />
-                  <Marker position={[lat!, lng!]} />
-                </MapContainer>
+                <MapErrorBoundary onError={() => setMapError(true)}>
+                  <MapContainer
+                    center={[lat!, lng!]}
+                    zoom={13}
+                    scrollWheelZoom={false}
+                    style={{ height: "100%", width: "100%" }}
+                  >
+                    <TileLayer
+                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    />
+                    <Marker position={[lat!, lng!]} />
+                  </MapContainer>
+                </MapErrorBoundary>
               </div>
             </div>
           )}

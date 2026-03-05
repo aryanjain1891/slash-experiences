@@ -7,7 +7,10 @@ import { headers } from "next/headers";
 export async function POST(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
-    const userId = session?.user?.id;
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const userId = session.user.id;
 
     const {
       razorpay_order_id,
@@ -38,15 +41,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (userId) {
-      await createPayment({
-        userId,
-        bookingId: bookingData?.bookingId,
-        razorpayOrderId: razorpay_order_id,
-        amount: String(bookingData?.amount ?? 0),
-        currency: bookingData?.currency,
-      });
-    }
+    await createPayment({
+      userId,
+      bookingId: bookingData?.bookingId,
+      razorpayOrderId: razorpay_order_id,
+      amount: String(bookingData?.amount ?? 0),
+      currency: bookingData?.currency,
+    });
 
     await updatePaymentStatus(razorpay_order_id, razorpay_payment_id, "paid");
 

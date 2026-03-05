@@ -8,10 +8,13 @@ import { Star } from "lucide-react";
 interface Testimonial {
   id: string;
   name: string;
-  avatar?: string;
+  company?: string;
+  role?: string;
+  quote: string;
+  avatar_url?: string;
   rating: number;
-  text: string;
-  experience?: string;
+  experience_id?: string;
+  is_featured?: boolean;
 }
 
 export default function TestimonialsPage() {
@@ -60,12 +63,12 @@ export default function TestimonialsPage() {
                   <CardContent className="p-6">
                     <div className="flex items-center gap-3 mb-4">
                       <Avatar>
-                        <AvatarImage src={t.avatar} />
-                        <AvatarFallback>{t.name.charAt(0)}</AvatarFallback>
+                        <AvatarImage src={t.avatar_url} />
+                        <AvatarFallback>{t.name?.charAt(0) ?? "?"}</AvatarFallback>
                       </Avatar>
                       <div>
                         <p className="font-medium">{t.name}</p>
-                        {t.experience && <p className="text-sm text-muted-foreground">{t.experience}</p>}
+                        {t.role && <p className="text-sm text-muted-foreground">{t.role}{t.company ? ` at ${t.company}` : ""}</p>}
                       </div>
                     </div>
                     <div className="flex gap-0.5 mb-3">
@@ -73,7 +76,7 @@ export default function TestimonialsPage() {
                         <Star key={i} className={`h-4 w-4 ${i < t.rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/30"}`} />
                       ))}
                     </div>
-                    <p className="text-muted-foreground">{t.text}</p>
+                    <p className="text-muted-foreground">{t.quote}</p>
                   </CardContent>
                 </Card>
               ))}

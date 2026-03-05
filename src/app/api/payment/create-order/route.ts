@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Razorpay from "razorpay";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 
 function getRazorpay() {
   return new Razorpay({
@@ -10,6 +12,11 @@ function getRazorpay() {
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
       return NextResponse.json(
         { error: "Payment not configured" },

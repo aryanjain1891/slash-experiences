@@ -100,7 +100,7 @@ export default function HomePage() {
       5000
     );
     return () => clearInterval(interval);
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- heroImages is a static constant
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     const xVal = (e.clientX - window.innerWidth / 2) / window.innerWidth;
@@ -127,65 +127,47 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
+    const city = getSelectedCity();
+    setSelectedCityState(city);
+    const coords = city ? CITY_COORDINATES[city] : null;
+
+    setIsTrendingLoading(true);
+    if (coords) setIsCityLoading(true);
+
     (async () => {
-      setIsTrendingLoading(true);
       try {
         const res = await fetch("/api/experiences");
         if (res.ok) {
           const data = await res.json();
           const all: Experience[] = Array.isArray(data) ? data : data.experiences ?? [];
+
           setTrendingExperiences(all.filter((e) => e.trending));
+
+          if (coords) {
+            const withDistance = all
+              .filter((e) => e.latitude && e.longitude)
+              .map((e) => ({
+                ...e,
+                _distance: calculateHaversineDistance(
+                  coords.lat,
+                  coords.lng,
+                  parseFloat(e.latitude!),
+                  parseFloat(e.longitude!)
+                ),
+              }))
+              .sort((a, b) => a._distance - b._distance)
+              .slice(0, 6);
+            setCityExperiences(withDistance);
+          }
         }
       } catch (err) {
         console.error("Failed to load experiences:", err);
       } finally {
         setIsTrendingLoading(false);
-      }
-    })();
-  }, []);
-
-  // City-based suggestions
-  useEffect(() => {
-    const city = getSelectedCity();
-    setSelectedCityState(city);
-    if (!city) return;
-
-    const coords = CITY_COORDINATES[city];
-    if (!coords) return;
-
-    setIsCityLoading(true);
-    (async () => {
-      try {
-        const res = await fetch("/api/experiences");
-        if (res.ok) {
-          const data = await res.json();
-          const all: Experience[] = Array.isArray(data)
-            ? data
-            : data.experiences ?? [];
-
-          const withDistance = all
-            .filter((e) => e.latitude && e.longitude)
-            .map((e) => ({
-              ...e,
-              _distance: calculateHaversineDistance(
-                coords.lat,
-                coords.lng,
-                parseFloat(e.latitude!),
-                parseFloat(e.longitude!)
-              ),
-            }))
-            .sort((a, b) => a._distance - b._distance)
-            .slice(0, 6);
-
-          setCityExperiences(withDistance);
-        }
-      } catch {
-        /* ignore */
-      } finally {
         setIsCityLoading(false);
       }
     })();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- intentional mount-only fetch
 
   return (
     <div className="flex flex-col min-h-screen overflow-x-hidden">

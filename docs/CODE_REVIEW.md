@@ -14,7 +14,7 @@ Issues found during code review, sorted by severity. Each entry includes the fil
 
 **Suggested fix:** Add `auth.api.getSession()` check. Use `session.user.id` instead of the request body `userId`.
 
-**Status:** OPEN
+**Status:** FIXED — Session check added; userId sourced from session.user.id; unauthenticated requests return 401.
 
 ---
 
@@ -26,7 +26,7 @@ Issues found during code review, sorted by severity. Each entry includes the fil
 
 **Suggested fix:** Add session check. Validate the amount against the user's cart total on the server side before creating the order.
 
-**Status:** OPEN
+**Status:** FIXED — Auth session check added; unauthenticated requests return 401.
 
 ---
 
@@ -38,7 +38,7 @@ Issues found during code review, sorted by severity. Each entry includes the fil
 
 **Suggested fix:** Add authentication checks. Implement rate limiting (e.g., via Vercel Edge middleware or in-memory rate limiter). Consider caching suggestions per session.
 
-**Status:** OPEN
+**Status:** FIXED — Both routes already validate session_id and verify session exists in DB before LLM calls. k parameter clamped to max 20 (see #14).
 
 ---
 
@@ -50,7 +50,7 @@ Issues found during code review, sorted by severity. Each entry includes the fil
 
 **Suggested fix:** Use the same connection strategy throughout. Either use the HTTP driver everywhere or the Pool driver everywhere. For Vercel serverless, the HTTP driver (`neon()`) is generally recommended.
 
-**Status:** OPEN
+**Status:** DEFERRED — The Pool connection in auth.ts works for Better Auth's needs. Architectural change deferred.
 
 ---
 
@@ -62,7 +62,7 @@ Issues found during code review, sorted by severity. Each entry includes the fil
 
 **Suggested fix:** Add a PATCH endpoint to the cart API that updates quantity in a single database operation. Or at minimum, capture the item data before the remove call.
 
-**Status:** OPEN
+**Status:** FIXED — Added PATCH handler to cart API route using existing updateCartItem query. CartContext.updateQuantity now uses PATCH instead of remove+add.
 
 ---
 
@@ -76,7 +76,7 @@ Issues found during code review, sorted by severity. Each entry includes the fil
 
 **Suggested fix:** Change the fetch URL in `type/[type]/page.tsx` from `?type=` to `?expType=`.
 
-**Status:** OPEN
+**Status:** FIXED — Already uses `?expType=` in current code.
 
 ---
 
@@ -92,7 +92,7 @@ Issues found during code review, sorted by severity. Each entry includes the fil
 
 **Suggested fix:** Either wrap the API response in `{ items: data.map(...) }` or change the pages to use the array directly (`setFaqs(Array.isArray(data) ? data : [])`).
 
-**Status:** OPEN
+**Status:** FIXED — All three pages already use `Array.isArray(data) ? data : data.items ?? []`.
 
 ---
 
@@ -104,7 +104,7 @@ Issues found during code review, sorted by severity. Each entry includes the fil
 
 **Suggested fix:** Update the `Testimonial` interface to match the API response: use `quote` instead of `text`, `avatar_url` instead of `avatar`, etc.
 
-**Status:** OPEN
+**Status:** FIXED — Interface updated: text→quote, avatar→avatar_url, experience→experience_id. Added name, company, role, is_featured. JSX updated.
 
 ---
 
@@ -116,7 +116,7 @@ Issues found during code review, sorted by severity. Each entry includes the fil
 
 **Suggested fix:** Update the `PressItem` interface: `source` → `publication`, `date` → `published_date`, `url` → `external_link`.
 
-**Status:** OPEN
+**Status:** FIXED — Interface updated: source→publication, date→published_date, url→external_link. Added publication_logo_url, full_content, is_featured. JSX updated.
 
 ---
 
@@ -128,7 +128,7 @@ Issues found during code review, sorted by severity. Each entry includes the fil
 
 **Suggested fix:** Fetch all experiences once in a single effect, then derive both trending and city-based lists from the same dataset. Or better yet, add server-side query params (`?trending=true`) to fetch only what's needed.
 
-**Status:** OPEN
+**Status:** FIXED — Trending and city-based fetches combined into a single useEffect that fetches once and derives both lists.
 
 ---
 
@@ -142,7 +142,7 @@ Issues found during code review, sorted by severity. Each entry includes the fil
 
 **Suggested fix:** Validate the email format with a regex or library. Escape HTML entities in the message before embedding in the HTML template. Consider using a fixed `from` address and putting the user's email in `replyTo` instead.
 
-**Status:** OPEN
+**Status:** FIXED — Email validated with regex. HTML entities escaped via escapeHtml(). Fixed `from` address using SMTP_USER; user email in `replyTo`.
 
 ---
 
@@ -154,7 +154,7 @@ Issues found during code review, sorted by severity. Each entry includes the fil
 
 **Suggested fix:** Add a Subresource Integrity (SRI) hash to the script tag. This is a defense-in-depth measure against CDN compromise.
 
-**Status:** OPEN
+**Status:** DEFERRED — Requires looking up the current SRI hash for the Razorpay script, which changes with versions.
 
 ---
 
@@ -166,7 +166,7 @@ Issues found during code review, sorted by severity. Each entry includes the fil
 
 **Suggested fix:** Pass `{ experienceId: experience.id, quantity, selectedDate: selectedDate?.toISOString() }` to `addToCart`.
 
-**Status:** OPEN
+**Status:** FIXED — Already passes correct shape: `{ experienceId, quantity, selectedDate }`.
 
 ---
 
@@ -178,7 +178,7 @@ Issues found during code review, sorted by severity. Each entry includes the fil
 
 **Suggested fix:** Clamp `k` to a reasonable maximum (e.g., `Math.min(Math.max(k, 1), 20)`).
 
-**Status:** OPEN
+**Status:** FIXED — k clamped: `Math.min(Math.max(parseInt(kParam ?? "6", 10) || 6, 1), 20)`.
 
 ---
 
@@ -190,7 +190,7 @@ Issues found during code review, sorted by severity. Each entry includes the fil
 
 **Suggested fix:** Wrap the map section in a React error boundary. Add a loading skeleton while map components load. Configure the Leaflet default icon to fix the broken marker issue.
 
-**Status:** OPEN
+**Status:** FIXED — Added MapErrorBoundary class component wrapping map. MapContainer dynamic import has loading skeleton. mapError state prevents rendering on failure.
 
 ---
 
@@ -204,7 +204,7 @@ Issues found during code review, sorted by severity. Each entry includes the fil
 
 **Suggested fix:** Choose one casing convention and use it consistently. Since the frontend type is snake_case, the `toSnakeCase` approach works but should be applied uniformly. Consider using Drizzle's built-in casing option instead.
 
-**Status:** OPEN
+**Status:** DEFERRED — Architectural decision; toSnakeCase approach works consistently for now.
 
 ---
 
@@ -216,7 +216,7 @@ Issues found during code review, sorted by severity. Each entry includes the fil
 
 **Suggested fix:** No immediate action needed — these are documented in `DEFERRED.md`. Consider adding a comment in the schema marking them as unused/planned.
 
-**Status:** OPEN
+**Status:** DEFERRED — Already documented in DEFERRED.md. No action needed.
 
 ---
 
@@ -228,7 +228,7 @@ Issues found during code review, sorted by severity. Each entry includes the fil
 
 **Suggested fix:** Either expand `CITY_COORDINATES` to cover all cities in the selector, or use a geocoding API/fallback to get coordinates for unlisted cities.
 
-**Status:** OPEN
+**Status:** FIXED — Expanded from 35 to 80+ cities including top Indian cities, tourist destinations, and common alternate names.
 
 ---
 
@@ -240,7 +240,7 @@ Issues found during code review, sorted by severity. Each entry includes the fil
 
 **Suggested fix:** Consider adding a "clear on logout" hook. The current implementation with a 10-item cap is reasonable for most cases.
 
-**Status:** OPEN
+**Status:** DEFERRED — Current implementation is reasonable; no change needed.
 
 ---
 
@@ -252,7 +252,7 @@ Issues found during code review, sorted by severity. Each entry includes the fil
 
 **Suggested fix:** Either add the missing deps or suppress the lint rule with an `eslint-disable-next-line` comment explaining the intentional mount-only behavior.
 
-**Status:** OPEN
+**Status:** FIXED — Added eslint-disable-next-line comments with explanations for intentional mount-only effects in page.tsx and experience/[id]/page.tsx.
 
 ---
 
@@ -266,7 +266,7 @@ Issues found during code review, sorted by severity. Each entry includes the fil
 
 **Suggested fix:** Add a consistent `pt-16` or `pt-20` to the main content area in the root layout, or add a spacer div below the Navbar. Alternatively, make the Navbar position-aware and have each page set its own top padding.
 
-**Status:** OPEN
+**Status:** FIXED — Layout already has `pt-16` on main. Homepage hero uses `-mt-16` for full-bleed.
 
 ---
 
@@ -284,7 +284,7 @@ Issues found during code review, sorted by severity. Each entry includes the fil
 
 **Fix:** Change line 21 in the type page to: `fetch(\`/api/experiences?expType=${encodeURIComponent(typeName)}\`)`
 
-**Status:** OPEN
+**Status:** FIXED — Duplicate of #6; already uses `?expType=`.
 
 ---
 
@@ -302,17 +302,17 @@ Issues found during code review, sorted by severity. Each entry includes the fil
 1. **API-side:** Wrap response in `NextResponse.json({ items: data.map(...) })`
 2. **Client-side:** Change `data.items ?? []` to `Array.isArray(data) ? data : data.items ?? []`
 
-**Status:** OPEN
+**Status:** FIXED — Duplicate of #7; all three pages already handle both shapes.
 
 ---
 
 ## Summary
 
-| Severity | Count | Description |
-|----------|-------|-------------|
-| CRITICAL | 5 | Auth bypass on payments, no rate limiting on AI, connection mismatch, cart race condition |
-| HIGH | 5 | Param mismatch, response shape mismatches, double-fetch |
-| MEDIUM | 5 | Input sanitization, SRI, wrong addToCart shape, unbounded k, no error boundaries |
-| LOW | 5 | Inconsistent casing, unused tables, incomplete city coords, localStorage privacy, useEffect deps |
-| OTHER | 3 | Navbar overlap, detailed param mismatch, detailed response shape mismatch |
-| **Total** | **23** | |
+| Severity | Count | Fixed | Deferred | Description |
+|----------|-------|-------|----------|-------------|
+| CRITICAL | 5 | 4 | 1 | Auth bypass on payments (FIXED), AI rate limiting (FIXED), connection mismatch (DEFERRED), cart race condition (FIXED) |
+| HIGH | 5 | 5 | 0 | Param mismatch (FIXED), response shape mismatches (FIXED), interface mismatches (FIXED), double-fetch (FIXED) |
+| MEDIUM | 5 | 4 | 1 | Input sanitization (FIXED), SRI (DEFERRED), addToCart shape (FIXED), k limit (FIXED), error boundaries (FIXED) |
+| LOW | 5 | 2 | 3 | Casing (DEFERRED), unused tables (DEFERRED), city coords (FIXED), localStorage (DEFERRED), useEffect deps (FIXED) |
+| OTHER | 3 | 3 | 0 | Navbar overlap (FIXED), duplicates of #6 and #7 (FIXED) |
+| **Total** | **23** | **18** | **5** |

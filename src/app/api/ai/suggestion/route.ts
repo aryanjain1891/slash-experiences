@@ -18,7 +18,8 @@ function buildQueryText(answers: Record<string, string>): string {
 export async function GET(request: NextRequest) {
   try {
     const sessionId = request.nextUrl.searchParams.get("sessionId");
-    const k = parseInt(request.nextUrl.searchParams.get("k") ?? "6", 10);
+    const kParam = request.nextUrl.searchParams.get("k");
+    const k = Math.min(Math.max(parseInt(kParam ?? "6", 10) || 6, 1), 20);
 
     if (!sessionId) {
       return NextResponse.json(

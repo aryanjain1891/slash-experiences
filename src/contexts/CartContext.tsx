@@ -89,16 +89,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const updateQuantity = async (id: string, quantity: number) => {
     try {
-      await removeFromCart(id);
-      const item = items.find((i) => i.id === id);
-      if (item) {
-        await addToCart({
-          experienceId: item.experience_id,
-          quantity,
-          selectedDate: item.selected_date,
-          selectedTime: item.selected_time,
-        });
-      }
+      const res = await fetch("/api/cart", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, quantity }),
+      });
+      if (res.ok) await fetchCart();
     } catch (err) {
       console.error("Failed to update cart:", err);
     }

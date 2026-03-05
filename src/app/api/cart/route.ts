@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import {
   getCart,
   addToCart,
+  updateCartItem,
   removeFromCart,
   clearCart,
 } from "@/db/queries/cart";
@@ -50,6 +51,36 @@ export async function POST(request: NextRequest) {
     console.error("Error adding to cart:", error);
     return NextResponse.json(
       { error: "Failed to add to cart" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id, quantity } = await request.json();
+    if (!id || !quantity || quantity < 1) {
+      return NextResponse.json(
+        { error: "id and valid quantity required" },
+        { status: 400 }
+      );
+    }
+
+    const item = await updateCartItem(id, session.user.id, quantity);
+    if (!item) {
+      return NextResponse.json({ error: "Item not found" }, { status: 404 });
+    }
+
+    return NextResponse.json(toSnakeCase(item));
+  } catch (error) {
+    console.error("Error updating cart item:", error);
+    return NextResponse.json(
+      { error: "Failed to update cart item" },
       { status: 500 }
     );
   }

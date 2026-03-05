@@ -7,10 +7,13 @@ import { ExternalLink } from "lucide-react";
 interface PressItem {
   id: string;
   title: string;
-  source: string;
-  date: string;
-  url?: string;
+  publication: string;
+  published_date: string;
+  external_link?: string;
   excerpt?: string;
+  publication_logo_url?: string;
+  full_content?: string;
+  is_featured?: boolean;
 }
 
 export default function PressPage() {
@@ -61,11 +64,11 @@ export default function PressPage() {
                       <div>
                         <CardTitle className="text-xl">{item.title}</CardTitle>
                         <p className="text-sm text-muted-foreground mt-1">
-                          {item.source} &middot; {item.date}
+                          {item.publication} &middot; {item.published_date}
                         </p>
                       </div>
-                      {item.url && (
-                        <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary/80">
+                      {item.external_link && (
+                        <a href={item.external_link} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary/80">
                           <ExternalLink className="h-5 w-5" />
                         </a>
                       )}
