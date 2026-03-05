@@ -59,6 +59,23 @@ export default function CartPage() {
   };
 
   const handlePaymentSuccess = async () => {
+    try {
+      await fetch("/api/bookings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          totalAmount: String(totalPrice),
+          paymentMethod: "razorpay",
+          items: items.map((item) => ({
+            experienceId: item.experience_id,
+            quantity: item.quantity || 1,
+            priceAtBooking: String(parseFloat(String(item.price)) || 0),
+          })),
+        }),
+      });
+    } catch (e) {
+      console.error("Failed to save booking:", e);
+    }
     toast.success("Payment successful! Booking confirmed.");
     await clearCart();
     router.push("/profile?tab=bookings");
