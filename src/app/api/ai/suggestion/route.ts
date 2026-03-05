@@ -5,14 +5,46 @@ import { getSession, updateSession } from "@/db/queries/ai-sessions";
 import { db } from "@/db";
 import { sql } from "drizzle-orm";
 
+const BUDGET_RANGES: Record<string, [number, number]> = {
+  "Under ₹1,000": [0, 1000],
+  "₹1,000 - ₹3,000": [800, 3500],
+  "₹3,000 - ₹5,000": [2500, 5500],
+  "₹5,000 - ₹10,000": [4000, 11000],
+  "₹10,000+": [8000, 999999],
+};
+
+function parseBudgetRange(budget: string): [number, number] | null {
+  return BUDGET_RANGES[budget] ?? null;
+}
+
 function buildQueryText(answers: Record<string, string>): string {
   const parts: string[] = [];
-  if (answers.personality) parts.push(`${answers.personality} experience`);
-  if (answers.recipient) parts.push(`for a ${answers.recipient}`);
-  if (answers.occasion) parts.push(`for ${answers.occasion}`);
-  if (answers.budget) parts.push(`budget ${answers.budget}`);
-  if (answers.interests) parts.push(`interested in ${answers.interests}`);
-  return parts.join(", ") || "gift experience";
+
+  if (answers.recipient && answers.occasion) {
+    parts.push(
+      `A special ${answers.occasion} gift experience for my ${answers.recipient}`
+    );
+  }
+  if (answers.personality) {
+    parts.push(`They are ${answers.personality.toLowerCase()}`);
+  }
+  if (answers.interests) {
+    parts.push(
+      `They love ${answers.interests.toLowerCase()} activities`
+    );
+  }
+
+  if (answers.recipient === "Partner") {
+    parts.push("romantic, intimate, couple-friendly");
+  } else if (answers.recipient === "Friend") {
+    parts.push("fun, social, group-friendly");
+  } else if (answers.recipient === "Parent") {
+    parts.push("relaxing, thoughtful, comfortable");
+  } else if (answers.recipient === "Child") {
+    parts.push("exciting, safe, family-friendly");
+  }
+
+  return parts.join(". ") || "gift experience";
 }
 
 export async function GET(request: NextRequest) {
@@ -36,7 +68,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const queryText = buildQueryText(session.answers ?? {});
+    const answers = session.answers ?? {};
+    const queryText = buildQueryText(answers);
 
     const { embedding } = await embed({
       model: google.textEmbeddingModel("gemini-embedding-001"),
@@ -47,37 +80,98 @@ export async function GET(request: NextRequest) {
     });
 
     const vectorLiteral = `[${embedding.join(",")}]`;
+    const budgetRange = parseBudgetRange(answers.budget ?? "");
+    const priceFilter = budgetRange
+      ? sql`AND CAST(price AS numeric) BETWEEN ${budgetRange[0]} AND ${budgetRange[1]}`
+      : sql``;
 
-    const experiences = await db.execute(
-      sql`SELECT id, title, description, image_url, price, location, duration, participants, date, category, niche_category, trending, featured, romantic, adventurous, group_activity
+    // Fetch more candidates than needed so we can let the LLM pick the best
+    const candidateLimit = Math.min(k * 3, 20);
+
+    const candidates = await db.execute(
+      sql`SELECT id, title, description, image_url, price, location, duration,
+                 participants, date, category, niche_category, trending, featured,
+                 romantic, adventurous, group_activity
           FROM experiences
+          WHERE embedding IS NOT NULL ${priceFilter}
           ORDER BY embedding <=> ${vectorLiteral}::vector
-          LIMIT ${k}`
+          LIMIT ${candidateLimit}`
     );
 
-    const { text } = await generateText({
+    const candidateRows = candidates.rows as Record<string, unknown>[];
+
+    // Use Gemini to pick and rank the best matches from the candidates
+    const { text: rankedJson } = await generateText({
+      model: google("gemini-2.5-flash"),
+      prompt: `You are a gift experience curator. Pick the ${k} BEST experiences from the candidates below for this person:
+
+- Recipient: ${answers.recipient ?? "someone special"}
+- Occasion: ${answers.occasion ?? "a special occasion"}
+- Budget: ${answers.budget ?? "flexible"}
+- Interests: ${answers.interests ?? "various"}
+- Personality: ${answers.personality ?? "fun-loving"}
+
+Candidates:
+${candidateRows.map((e, i) => `${i + 1}. [ID: ${e.id}] ${e.title} — ${e.description} (₹${e.price}, ${e.location}, category: ${e.category}, romantic: ${e.romantic}, adventurous: ${e.adventurous}, group: ${e.group_activity})`).join("\n")}
+
+Rules:
+- Pick experiences that actually fit the recipient, occasion, and personality
+- For partners: prefer romantic/intimate experiences, avoid group activities like paintball
+- For friends: prefer fun social activities
+- For parents: prefer relaxing/comfortable experiences
+- Respect the budget range
+- Prefer variety (don't pick 3 similar karaoke places)
+
+Return ONLY a JSON array of the selected IDs in order of best fit, like: ["id1","id2","id3"]
+No explanation, just the JSON array.`,
+    });
+
+    // Parse the ranked IDs and map back to full experience objects
+    let selectedIds: string[] = [];
+    try {
+      const cleaned = rankedJson.replace(/```json\n?|```\n?/g, "").trim();
+      selectedIds = JSON.parse(cleaned);
+    } catch {
+      selectedIds = candidateRows.slice(0, k).map((e) => e.id as string);
+    }
+
+    const selectedExperiences = selectedIds
+      .map((id) => candidateRows.find((e) => e.id === id))
+      .filter(Boolean)
+      .slice(0, k);
+
+    // If LLM filtering left too few, fill from remaining candidates
+    if (selectedExperiences.length < k) {
+      const usedIds = new Set(selectedExperiences.map((e) => e!.id));
+      for (const c of candidateRows) {
+        if (selectedExperiences.length >= k) break;
+        if (!usedIds.has(c.id)) selectedExperiences.push(c);
+      }
+    }
+
+    const { text: aiResponse } = await generateText({
       model: google("gemini-2.5-flash"),
       prompt: `You are a friendly gift experience advisor. Based on the user's preferences:
-- Recipient: ${session.answers?.recipient ?? "someone special"}
-- Occasion: ${session.answers?.occasion ?? "a special occasion"}
-- Budget: ${session.answers?.budget ?? "flexible"}
-- Interests: ${session.answers?.interests ?? "various"}
-- Personality: ${session.answers?.personality ?? "fun-loving"}
+- Recipient: ${answers.recipient ?? "someone special"}
+- Occasion: ${answers.occasion ?? "a special occasion"}
+- Budget: ${answers.budget ?? "flexible"}
+- Interests: ${answers.interests ?? "various"}
+- Personality: ${answers.personality ?? "fun-loving"}
 
-Here are the top experience matches:
-${(experiences.rows as Record<string, unknown>[]).map((e, i) => `${i + 1}. ${e.title} - ${e.description} (₹${e.price}, ${e.location})`).join("\n")}
+Here are the curated experience picks:
+${selectedExperiences.map((e, i) => `${i + 1}. ${e!.title} — ${e!.description} (₹${e!.price}, ${e!.location})`).join("\n")}
 
-Write a warm, personalized recommendation (2-3 paragraphs) explaining why these experiences are great choices. Be enthusiastic but concise.`,
+Write a warm, personalized recommendation (2-3 short paragraphs) explaining why each of these is a great choice for this specific person and occasion. Be enthusiastic but concise. Don't use bullet points — write in flowing prose.`,
     });
 
     await updateSession(sessionId, {
-      suggestions: experiences.rows as unknown[],
-      context: { queryText, aiResponse: text },
+      suggestions: selectedExperiences as unknown[],
+      context: { queryText, aiResponse },
     });
 
     return NextResponse.json({
-      suggestions: experiences.rows,
-      aiResponse: text,
+      suggestions: selectedExperiences,
+      aiResponse,
     });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
