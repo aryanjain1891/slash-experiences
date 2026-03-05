@@ -240,3 +240,7 @@
 body.search-open {
   overflow: hidden;
 }
+
+.leaflet-container {
+  z-index: 0 !important;
+}

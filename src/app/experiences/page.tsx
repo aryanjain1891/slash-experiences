@@ -116,6 +116,11 @@ function ExperiencesContent() {
   const { isSaved, toggleSaved } = useSavedExperiences();
 
   useEffect(() => {
+    setSearchQuery(searchParam ?? "");
+    setDebouncedSearch(searchParam ?? "");
+  }, [searchParam]);
+
+  useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
     return () => clearTimeout(timer);
   }, [searchQuery]);

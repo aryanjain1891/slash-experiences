@@ -87,7 +87,7 @@ export const experiences = pgTable(
 // ── User ──
 
 export const profiles = pgTable("profiles", {
-  id: uuid("id").primaryKey(),
+  id: text("id").primaryKey(),
   fullName: varchar("full_name", { length: 255 }),
   avatarUrl: text("avatar_url"),
   phone: varchar("phone", { length: 50 }),
@@ -98,21 +98,21 @@ export const profiles = pgTable("profiles", {
 
 export const referrals = pgTable("referrals", {
   id: uuid("id").defaultRandom().primaryKey(),
-  userId: uuid("user_id").notNull(),
-  referredUserId: uuid("referred_user_id").notNull(),
+  userId: text("user_id").notNull(),
+  referredUserId: text("referred_user_id").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
 export const connections = pgTable("connections", {
   id: uuid("id").defaultRandom().primaryKey(),
-  userId: uuid("user_id").notNull(),
-  connectedUserId: uuid("connected_user_id").notNull(),
+  userId: text("user_id").notNull(),
+  connectedUserId: text("connected_user_id").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
 export const viewedExperiences = pgTable("viewed_experiences", {
   id: uuid("id").defaultRandom().primaryKey(),
-  userId: uuid("user_id").notNull(),
+  userId: text("user_id").notNull(),
   experienceId: uuid("experience_id")
     .notNull()
     .references(() => experiences.id, { onDelete: "cascade" }),
@@ -123,7 +123,7 @@ export const viewedExperiences = pgTable("viewed_experiences", {
 
 export const cartItems = pgTable("cart_items", {
   id: uuid("id").defaultRandom().primaryKey(),
-  userId: uuid("user_id").notNull(),
+  userId: text("user_id").notNull(),
   experienceId: uuid("experience_id")
     .notNull()
     .references(() => experiences.id, { onDelete: "cascade" }),
@@ -136,7 +136,7 @@ export const cartItems = pgTable("cart_items", {
 
 export const wishlists = pgTable("wishlists", {
   id: uuid("id").defaultRandom().primaryKey(),
-  userId: uuid("user_id").notNull(),
+  userId: text("user_id").notNull(),
   experienceId: uuid("experience_id")
     .notNull()
     .references(() => experiences.id, { onDelete: "cascade" }),
@@ -145,7 +145,7 @@ export const wishlists = pgTable("wishlists", {
 
 export const bookings = pgTable("bookings", {
   id: uuid("id").defaultRandom().primaryKey(),
-  userId: uuid("user_id").notNull(),
+  userId: text("user_id").notNull(),
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }),
   status: varchar("status", { length: 50 }).default("pending"),
   paymentMethod: varchar("payment_method", { length: 50 }),
@@ -167,7 +167,7 @@ export const bookingItems = pgTable("booking_items", {
 
 export const payments = pgTable("payments", {
   id: uuid("id").defaultRandom().primaryKey(),
-  userId: uuid("user_id").notNull(),
+  userId: text("user_id").notNull(),
   bookingId: uuid("booking_id").references(() => bookings.id),
   razorpayOrderId: varchar("razorpay_order_id", { length: 255 }),
   razorpayPaymentId: varchar("razorpay_payment_id", { length: 255 }),
@@ -187,7 +187,7 @@ export const giftPersonalizations = pgTable("gift_personalizations", {
   deliveryMethod: varchar("delivery_method", { length: 100 }),
   message: text("message"),
   category: varchar("category", { length: 100 }),
-  userId: uuid("user_id"),
+  userId: text("user_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
@@ -208,7 +208,7 @@ export const giftQuestionnaireResponses = pgTable(
     amazon: varchar("amazon", { length: 255 }),
     instagram: varchar("instagram", { length: 255 }),
     facebook: varchar("facebook", { length: 255 }),
-    userId: uuid("user_id"),
+    userId: text("user_id"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   }
 );
