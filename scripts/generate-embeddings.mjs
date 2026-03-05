@@ -1,8 +1,24 @@
 import { neon } from "@neondatabase/serverless";
+import { readFileSync } from "fs";
 
-const DATABASE_URL =
-  "postgresql://neondb_owner:npg_Po9Rw2SLgEbl@ep-empty-firefly-a10m87ds-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require";
-const GOOGLE_API_KEY = "AIzaSyAVu5EkrmX3i0aj4sxx9w8ya-xNE0Vb5Mk";
+function loadEnv() {
+  try {
+    const content = readFileSync(".env.local", "utf-8");
+    for (const line of content.split("\n")) {
+      const match = line.match(/^([^#=]+)=(.*)$/);
+      if (match) process.env[match[1].trim()] = match[2].trim();
+    }
+  } catch { /* .env.local not found */ }
+}
+loadEnv();
+
+const DATABASE_URL = process.env.DATABASE_URL;
+const GOOGLE_API_KEY = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+
+if (!DATABASE_URL || !GOOGLE_API_KEY) {
+  console.error("Missing DATABASE_URL or GOOGLE_GENERATIVE_AI_API_KEY in .env.local");
+  process.exit(1);
+}
 
 const sql = neon(DATABASE_URL);
 
