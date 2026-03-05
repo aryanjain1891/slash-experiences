@@ -190,10 +190,7 @@ export default function ExperienceDetailPage() {
       toast.error("Please sign in to add items to your cart.");
       return;
     }
-    if (!selectedDate) {
-      toast.error("Please select a date before adding to cart.");
-      return;
-    }
+    // Date is optional -- many experiences are "Available daily"
     setIsCartLoading(true);
     try {
       await addToCart({

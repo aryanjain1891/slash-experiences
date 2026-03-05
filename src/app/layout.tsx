@@ -5,6 +5,7 @@ import { CartProvider } from "@/contexts/CartContext";
 import { WishlistProvider } from "@/contexts/WishlistContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
   title: "Slash Experiences",
@@ -32,6 +33,7 @@ export default function RootLayout({
               <Navbar />
               <main className="flex-1 pt-16">{children}</main>
               <Footer />
+              <Toaster position="bottom-right" richColors />
             </WishlistProvider>
           </CartProvider>
         </AuthProvider>
