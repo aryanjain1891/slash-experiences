@@ -61,7 +61,7 @@ export default function CartPage() {
   const handlePaymentSuccess = async () => {
     toast.success("Payment successful! Booking confirmed.");
     await clearCart();
-    router.push("/bookings");
+    router.push("/profile?tab=bookings");
   };
 
   const handlePaymentFailure = (error: unknown) => {

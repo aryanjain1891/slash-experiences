@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWishlist } from "@/contexts/WishlistContext";
@@ -54,9 +54,19 @@ interface Booking {
 }
 
 export default function ProfilePage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center items-center min-h-[60vh]"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" /></div>}>
+      <ProfileContent />
+    </Suspense>
+  );
+}
+
+function ProfileContent() {
   const { isAuthenticated, user, isLoading: authLoading, logout } = useAuth();
   const { isWishlisted, toggleWishlist } = useWishlist();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
 
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [editOpen, setEditOpen] = useState(false);
@@ -290,7 +300,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="wishlist">
+        <Tabs defaultValue={tabParam || "wishlist"}>
           <TabsList className="w-full justify-start">
             <TabsTrigger value="wishlist" className="gap-2">
               <Heart className="h-4 w-4" /> Wishlist
