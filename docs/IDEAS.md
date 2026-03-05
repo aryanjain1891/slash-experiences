@@ -12,6 +12,8 @@ Things to revisit and explore for future development.
 
 3. **Check docs/FEATURES.md and make changes** -- review the feature list for accuracy, update statuses, remove features that are no longer relevant, and add new ones.
 
+4. **Fix AI Gift Personalizer end-to-end** -- currently fails at the suggestion step. Needs: (a) run embedding generation script for all 65 experiences using Gemini text-embedding-004, (b) debug the /api/ai/suggestion route for edge cases, (c) test full flow: init -> questions -> suggestions -> followup. The embeddings column in the experiences table is empty.
+
 ---
 
 ## Feature Ideas (to explore)
