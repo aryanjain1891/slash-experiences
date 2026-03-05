@@ -3,7 +3,6 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { toast } from "sonner";
 import { Trash2, Minus, Plus, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -93,11 +92,10 @@ export default function CartPage() {
                   className="flex items-center gap-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border"
                 >
                   <div className="relative h-20 w-20 rounded-lg overflow-hidden shrink-0">
-                    <Image
+                    <img
                       src={getValidImgSrc(item.image_url)}
                       alt={item.title || "Experience"}
-                      fill
-                      className="object-cover"
+                      className="h-full w-full object-cover"
                     />
                   </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 
@@ -23,8 +23,9 @@ interface RazorpayResponse {
 }
 
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   interface Window {
-    Razorpay: new (options: RazorpayOptions) => { open: () => void };
+    Razorpay: new (options: any) => { open: () => void };
   }
 }
 
@@ -49,6 +50,8 @@ export default function RazorpayPayment({
 }: RazorpayPaymentProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [scriptLoaded, setScriptLoaded] = useState(false);
+  const onFailureRef = useRef(onFailure);
+  onFailureRef.current = onFailure;
 
   useEffect(() => {
     if (typeof window !== "undefined" && window.Razorpay) {
@@ -60,7 +63,7 @@ export default function RazorpayPayment({
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
     script.async = true;
     script.onload = () => setScriptLoaded(true);
-    script.onerror = () => onFailure(new Error("Failed to load Razorpay SDK"));
+    script.onerror = () => onFailureRef.current(new Error("Failed to load Razorpay SDK"));
     document.body.appendChild(script);
 
     return () => {
@@ -68,7 +71,7 @@ export default function RazorpayPayment({
         document.body.removeChild(script);
       }
     };
-  }, [onFailure]);
+  }, []);
 
   const handlePayment = useCallback(async () => {
     if (!scriptLoaded) {
@@ -89,12 +92,13 @@ export default function RazorpayPayment({
       });
 
       if (!orderRes.ok) {
-        throw new Error("Failed to create order");
+        const errData = await orderRes.json().catch(() => ({}));
+        throw new Error(errData.error || "Failed to create order");
       }
 
       const order = await orderRes.json();
 
-      const options: RazorpayOptions = {
+      const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY || "",
         amount: Number(order.amount),
         currency: order.currency || "INR",
@@ -110,6 +114,7 @@ export default function RazorpayPayment({
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_signature: response.razorpay_signature,
+                bookingData: { amount, currency: "INR" },
               }),
             });
 
@@ -124,9 +129,14 @@ export default function RazorpayPayment({
         },
         prefill: { name: userName, email: userEmail },
         theme: { color: "#6366f1" },
+        modal: {
+          ondismiss: () => {
+            setIsLoading(false);
+          },
+        },
       };
 
-      const razorpay = new window.Razorpay(options);
+      const razorpay = new window.Razorpay(options as RazorpayOptions);
       razorpay.open();
     } catch (error) {
       onFailure(error);
