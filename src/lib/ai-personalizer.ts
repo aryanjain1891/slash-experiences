@@ -43,7 +43,11 @@ export async function getSuggestions(sessionId: string, k = 6) {
 }
 
 export async function askFollowup(sessionId: string, question: string) {
-  return fetchJSON<{ response: string }>(
+  return fetchJSON<{
+    response: string;
+    suggestions: Record<string, unknown>[];
+    aiResponse: string;
+  }>(
     `${BASE}/followup?sessionId=${encodeURIComponent(sessionId)}&question=${encodeURIComponent(question)}`
   );
 }

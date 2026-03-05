@@ -47,6 +47,7 @@ export default function GiftPersonalizerPage() {
   const [stepIndex, setStepIndex] = useState(0);
   const [totalSteps, setTotalSteps] = useState(5);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [aiSummary, setAiSummary] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [followupInput, setFollowupInput] = useState("");
@@ -98,6 +99,7 @@ export default function GiftPersonalizerPage() {
         setStepIndex((s) => s + 1);
         const suggestionsRes = await getSuggestions(sessionId);
         setSuggestions(suggestionsRes.suggestions as Suggestion[]);
+        setAiSummary(suggestionsRes.aiResponse ?? "");
         setPhase("results");
       } else {
         setCurrentQuestion(nextRes.question);
@@ -134,8 +136,12 @@ export default function GiftPersonalizerPage() {
       setFollowupResponse(res.response);
       setFollowupInput("");
 
-      const suggestionsRes = await getSuggestions(sessionId);
-      setSuggestions(suggestionsRes.suggestions as Suggestion[]);
+      if (res.suggestions?.length) {
+        setSuggestions(res.suggestions as Suggestion[]);
+      }
+      if (res.aiResponse) {
+        setAiSummary(res.aiResponse);
+      }
     } catch {
       setFollowupResponse("Sorry, I couldn't process that. Try again.");
     } finally {
@@ -149,6 +155,7 @@ export default function GiftPersonalizerPage() {
     setStepIndex(0);
     setCurrentQuestion(null);
     setSuggestions([]);
+    setAiSummary("");
     setError(null);
     setShowFollowup(false);
     setFollowupResponse("");
@@ -392,6 +399,20 @@ export default function GiftPersonalizerPage() {
                 </motion.div>
               )}
             </AnimatePresence>
+
+            {/* AI Summary */}
+            {aiSummary && (
+              <Card className="bg-gradient-to-br from-primary/5 to-purple-50 border-primary/20">
+                <CardContent className="pt-5">
+                  <div className="flex items-start gap-3">
+                    <Wand2 className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+                    <div className="text-sm leading-relaxed text-gray-700 whitespace-pre-line">
+                      {aiSummary}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Suggestions grid */}
             <Card>
