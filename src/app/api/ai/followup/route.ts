@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     const context = session.context as Record<string, unknown> | null;
 
     const { text } = await generateText({
-      model: google("gemini-1.5-flash"),
+      model: google("gemini-2.0-flash"),
       prompt: `You are a friendly gift experience advisor. The user previously asked for gift suggestions and received these recommendations:
 
 Previous suggestions:
