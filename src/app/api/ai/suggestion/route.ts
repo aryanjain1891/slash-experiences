@@ -39,7 +39,9 @@ export async function GET(request: NextRequest) {
     const queryText = buildQueryText(session.answers ?? {});
 
     const { embedding } = await embed({
-      model: google.textEmbeddingModel("text-embedding-004"),
+      model: google.textEmbeddingModel("gemini-embedding-001", {
+        outputDimensionality: 768,
+      }),
       value: queryText,
     });
 

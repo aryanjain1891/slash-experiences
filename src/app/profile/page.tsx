@@ -28,7 +28,9 @@ import {
   Eye,
   Bookmark,
   Loader2,
+  MapPin,
 } from "lucide-react";
+import Link from "next/link";
 import ExperienceCard from "@/components/ExperienceCard";
 import { useSavedExperiences } from "@/hooks/useSavedExperiences";
 import type { Experience } from "@/types/experience";
@@ -41,16 +43,22 @@ interface ProfileData {
   bio?: string;
 }
 
+interface BookingItem {
+  experience_id: string;
+  quantity: number;
+  price_at_booking: string;
+  title?: string;
+  image_url?: string;
+  location?: string;
+}
+
 interface Booking {
   id: string;
   total_amount: string;
   status: string;
   booking_date: string;
-  items?: {
-    experience_id: string;
-    quantity: number;
-    price_at_booking: string;
-  }[];
+  payment_method?: string;
+  items?: BookingItem[];
 }
 
 export default function ProfilePage() {
@@ -394,9 +402,9 @@ function ProfileContent() {
             ) : bookings.length > 0 ? (
               <div className="space-y-4">
                 {bookings.map((booking) => (
-                  <Card key={booking.id}>
+                  <Card key={booking.id} className="overflow-hidden">
                     <CardContent className="py-4">
-                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
                         <div>
                           <p className="font-medium">
                             Booking #{booking.id.slice(0, 8)}
@@ -412,6 +420,11 @@ function ProfileContent() {
                                   }
                                 )
                               : "—"}
+                            {booking.payment_method && (
+                              <span className="ml-2 capitalize">
+                                · {booking.payment_method}
+                              </span>
+                            )}
                           </p>
                         </div>
                         <div className="text-right">
@@ -434,6 +447,49 @@ function ProfileContent() {
                           </span>
                         </div>
                       </div>
+
+                      {booking.items && booking.items.length > 0 && (
+                        <div className="border-t pt-3 space-y-3">
+                          {booking.items.map((item, idx) => (
+                            <Link
+                              key={idx}
+                              href={`/experience/${item.experience_id}`}
+                              className="flex items-center gap-3 group"
+                            >
+                              {item.image_url && (
+                                <div className="h-14 w-14 rounded-lg overflow-hidden shrink-0">
+                                  <img
+                                    src={item.image_url}
+                                    alt={item.title || "Experience"}
+                                    className="h-full w-full object-cover group-hover:scale-105 transition-transform"
+                                  />
+                                </div>
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-sm group-hover:text-primary transition-colors line-clamp-1">
+                                  {item.title || "Experience"}
+                                </p>
+                                {item.location && (
+                                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                    <MapPin className="h-3 w-3" />
+                                    {item.location}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="text-right shrink-0">
+                                <p className="text-sm font-medium">
+                                  ₹{Number(item.price_at_booking || 0).toLocaleString("en-IN")}
+                                </p>
+                                {item.quantity > 1 && (
+                                  <p className="text-xs text-muted-foreground">
+                                    ×{item.quantity}
+                                  </p>
+                                )}
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 ))}
