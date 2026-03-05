@@ -65,8 +65,9 @@ export default function CartPage() {
   };
 
   const handlePaymentFailure = (error: unknown) => {
-    console.error("Payment failed:", error);
-    toast.error("Payment failed. Please try again.");
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("Payment failed:", msg, error);
+    toast.error(`Payment failed: ${msg}`);
   };
 
   if (authLoading || isLoading) {
