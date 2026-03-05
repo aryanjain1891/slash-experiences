@@ -39,10 +39,11 @@ export async function GET(request: NextRequest) {
     const queryText = buildQueryText(session.answers ?? {});
 
     const { embedding } = await embed({
-      model: google.textEmbeddingModel("gemini-embedding-001", {
-        outputDimensionality: 768,
-      }),
+      model: google.textEmbeddingModel("gemini-embedding-001"),
       value: queryText,
+      providerOptions: {
+        google: { outputDimensionality: 768 },
+      },
     });
 
     const vectorLiteral = `[${embedding.join(",")}]`;
