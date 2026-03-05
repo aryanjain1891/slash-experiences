@@ -306,13 +306,147 @@ Issues found during code review, sorted by severity. Each entry includes the fil
 
 ---
 
+## Issues Found During E2E Testing (Session 2)
+
+### #24 — Schema userId columns defined as uuid but Better Auth uses nanoid (CRITICAL)
+
+**Files:** `src/db/schema.ts` (12 columns across 10 tables)
+
+**Description:** Better Auth generates user IDs as nanoid strings (e.g., `JmFGa1jmQy8h8cUMrl0H1Zo1hZ7DsCuT`), but all `userId` and some `id` columns in the Drizzle schema were defined as `uuid` type. Postgres rejected every authenticated write operation (cart, wishlist, views, bookings) with a type mismatch error.
+
+**Fix:** Changed 12 columns from `uuid("...")` to `text("...")` via direct `ALTER TABLE ... ALTER COLUMN ... TYPE text` SQL against Neon (couldn't use `drizzle-kit push` because it would drop Better Auth's tables).
+
+**Status:** FIXED
+
+---
+
+### #25 — Cart page used Next.js Image without remotePatterns config (HIGH)
+
+**File:** `src/app/cart/page.tsx`
+
+**Description:** Cart item images used the Next.js `<Image>` component with external Unsplash URLs, but `next.config.ts` had no `images.remotePatterns` configuration, causing all cart images to fail silently.
+
+**Fix:** Replaced with standard `<img>` tags. Also added `remotePatterns` for `images.unsplash.com` and `lh3.googleusercontent.com` to `next.config.ts`.
+
+**Status:** FIXED
+
+---
+
+### #26 — No booking created after successful payment (CRITICAL)
+
+**File:** `src/app/cart/page.tsx`, `src/app/api/payment/verify/route.ts`
+
+**Description:** The payment verify endpoint only created a `payments` record. No `bookings` or `booking_items` records were ever created. The profile page's Bookings tab was always empty even after successful payments.
+
+**Fix:** Added `POST /api/bookings` call in the cart page's `handlePaymentSuccess`, passing `totalAmount`, `paymentMethod: "razorpay"`, and each cart item's `experienceId`, `quantity`, and `priceAtBooking`.
+
+**Status:** FIXED
+
+---
+
+### #27 — Post-payment redirect to nonexistent /bookings route (HIGH)
+
+**File:** `src/app/cart/page.tsx`
+
+**Description:** After payment, the cart page called `router.push("/bookings")` but there was no page at that route, resulting in a 404. Bookings are displayed in the Profile page's Bookings tab.
+
+**Fix:** Changed redirect to `/profile?tab=bookings`. Updated Profile page to read the `tab` search param via `useSearchParams()` and set it as the default tab value.
+
+**Status:** FIXED
+
+---
+
+### #28 — Leaflet map z-index covers calendar popover (MEDIUM)
+
+**File:** `src/app/globals.css`
+
+**Description:** The Leaflet map container had a high z-index that covered the date picker popover on the experience detail page.
+
+**Fix:** Added `.leaflet-container { z-index: 0 !important; }` to globals.css.
+
+**Status:** FIXED
+
+---
+
+### #29 — Broken Leaflet marker icons in Next.js (MEDIUM)
+
+**File:** `src/app/experience/[id]/page.tsx`
+
+**Description:** Next.js bundling broke Leaflet's default marker icon paths, causing markers to show broken images on the map.
+
+**Fix:** Added `L.Icon.Default.mergeOptions()` with CDN URLs for marker icons, retina icons, and shadows.
+
+**Status:** FIXED
+
+---
+
+### #30 — Cookie Policy link returns 404 (LOW)
+
+**File:** `src/app/cookie-policy/page.tsx` (new)
+
+**Description:** The footer linked to `/cookie-policy` but the page didn't exist.
+
+**Fix:** Created a cookie policy page explaining cookies used (session token, location preference, search history, saved experiences).
+
+**Status:** FIXED
+
+---
+
+### #31 — Experiences search input doesn't sync with URL params (MEDIUM)
+
+**File:** `src/app/experiences/page.tsx`
+
+**Description:** Navigating to `/experiences?search=X` from the Navbar search didn't update the search input field, because `searchQuery` state was only initialized once.
+
+**Fix:** Added a `useEffect` that syncs `searchQuery` and `debouncedSearch` state with the `search` param from `useSearchParams()`.
+
+**Status:** FIXED
+
+---
+
+### #32 — Razorpay environment variables corrupted by trailing newlines (CRITICAL)
+
+**File:** Vercel environment variables
+
+**Description:** `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, and `NEXT_PUBLIC_RAZORPAY_KEY` on Vercel had trailing `\n` characters, causing Razorpay API to return 401 "Authentication failed".
+
+**Fix:** Removed and re-added the env vars with clean values on Vercel.
+
+**Status:** FIXED
+
+---
+
+### #33 — Razorpay checkout modal dismiss doesn't reset loading state (LOW)
+
+**File:** `src/components/RazorpayPayment.tsx`
+
+**Description:** If a user opened the Razorpay modal and closed it without paying, the "Processing..." state persisted and the button remained disabled.
+
+**Fix:** Added `modal.ondismiss` handler to reset `isLoading` to false.
+
+**Status:** FIXED
+
+---
+
+### #34 — Payment error messages too generic (LOW)
+
+**Files:** `src/app/cart/page.tsx`, `src/app/api/payment/create-order/route.ts`
+
+**Description:** Payment failures showed generic "Payment failed" without indicating the actual error, making debugging difficult.
+
+**Fix:** `handlePaymentFailure` now extracts the specific error message. Server-side create-order route includes the Razorpay error description in the response.
+
+**Status:** FIXED
+
+---
+
 ## Summary
 
 | Severity | Count | Fixed | Partial | Deferred | Description |
 |----------|-------|-------|---------|----------|-------------|
-| CRITICAL | 5 | 3 | 1 | 1 | Auth bypass on payments (FIXED), AI rate limiting (PARTIALLY FIXED), connection mismatch (DEFERRED), cart race condition (FIXED) |
-| HIGH | 5 | 5 | 0 | 0 | Param mismatch (FIXED), response shape mismatches (FIXED), interface mismatches (FIXED), double-fetch (FIXED) |
-| MEDIUM | 5 | 4 | 0 | 1 | Input sanitization (FIXED), SRI (DEFERRED), addToCart shape (FIXED), k limit (FIXED), error boundaries (FIXED) |
-| LOW | 5 | 2 | 0 | 3 | Casing (DEFERRED), unused tables (DEFERRED), city coords (FIXED), localStorage (DEFERRED), useEffect deps (FIXED) |
+| CRITICAL | 5+3 | 6 | 1 | 1 | Auth bypass on payments (FIXED), AI rate limiting (PARTIALLY FIXED), connection mismatch (DEFERRED), cart race condition (FIXED), uuid→text (FIXED), no booking created (FIXED), Razorpay env vars (FIXED) |
+| HIGH | 5+2 | 7 | 0 | 0 | Param mismatch (FIXED), response shape mismatches (FIXED), interface mismatches (FIXED), double-fetch (FIXED), cart images (FIXED), /bookings 404 (FIXED) |
+| MEDIUM | 5+3 | 7 | 0 | 1 | Input sanitization (FIXED), SRI (DEFERRED), addToCart shape (FIXED), k limit (FIXED), error boundaries (FIXED), map z-index (FIXED), marker icons (FIXED), search sync (FIXED) |
+| LOW | 5+3 | 5 | 0 | 3 | Casing (DEFERRED), unused tables (DEFERRED), city coords (FIXED), localStorage (DEFERRED), useEffect deps (FIXED), cookie policy (FIXED), modal dismiss (FIXED), error messages (FIXED) |
 | OTHER | 3 | 3 | 0 | 0 | Navbar overlap (FIXED), duplicates of #6 and #7 (FIXED) |
-| **Total** | **23** | **17** | **1** | **5** |
+| **Total** | **34** | **28** | **1** | **5** |

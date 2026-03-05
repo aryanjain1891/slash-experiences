@@ -32,7 +32,7 @@ All experience images use **Unsplash CDN URLs** stored directly in the database.
 - **Consistent sizing** — all images requested at `w=800` for uniform display
 - **Fast loading** — served from Unsplash's global CDN with proper cache headers
 
-The `ExperienceCard` and experience detail page read the `image_url` field directly. A `getValidImgSrc` helper handles edge cases (JSON-encoded arrays of URLs, null values) and falls back to a placeholder image.
+The `ExperienceCard` and experience detail page read the `image_url` field directly. A `getValidImgSrc` helper handles edge cases (JSON-encoded arrays of URLs, null values) and falls back to a placeholder image. The cart page uses standard `<img>` tags for maximum compatibility. `next.config.ts` has `images.remotePatterns` configured for `images.unsplash.com` and `lh3.googleusercontent.com` to allow Next.js `<Image>` component usage where needed.
 
 ---
 
@@ -64,7 +64,7 @@ Every API route lives under `src/app/api/`. Pages are client components (`"use c
 7. If the session is missing or expired, the API returns `{ error: "Unauthorized" }` with status 401
 8. The `AuthContext` provider on the client side exposes `user`, `signIn()`, and `signOut()`
 
-Better Auth manages its own tables (`user`, `session`, `account`) — these are not defined in `src/db/schema.ts`.
+Better Auth manages its own tables (`user`, `session`, `account`) — these are not defined in `src/db/schema.ts`. Better Auth generates nanoid-style user IDs (not UUIDs), so all `userId` columns in `schema.ts` use `text` type to accommodate them.
 
 ---
 
@@ -96,11 +96,13 @@ Better Auth manages its own tables (`user`, `session`, `account`) — these are 
 2. User clicks "Pay" → `RazorpayPayment` component calls `POST /api/payment/create-order` with the total amount
 3. Server creates a Razorpay order (amount × 100 for paise conversion) and returns the `order_id`
 4. Client opens the Razorpay checkout modal (loaded via `checkout.js` script tag)
-5. User completes payment in the modal
-6. On success, client sends `POST /api/payment/verify` with `razorpay_order_id`, `razorpay_payment_id`, and `razorpay_signature`
+5. User completes payment in the modal (if user closes modal, `ondismiss` resets the loading state)
+6. On success, client sends `POST /api/payment/verify` with `razorpay_order_id`, `razorpay_payment_id`, `razorpay_signature`, and `bookingData` (amount, currency)
 7. Server verifies the HMAC-SHA256 signature against `RAZORPAY_KEY_SECRET`
 8. If valid, creates a `payments` record and updates status to "paid"
-9. Client creates a booking via `POST /api/bookings`
+9. Cart page calls `POST /api/bookings` with `totalAmount`, `paymentMethod: "razorpay"`, and the cart items (each with `experienceId`, `quantity`, `priceAtBooking`)
+10. Server creates a `bookings` row and `booking_items` rows for each experience
+11. Cart is cleared and user is redirected to `/profile?tab=bookings`
 
 ---
 
@@ -124,6 +126,7 @@ slash-experiences/
 │   │   ├── wishlist/page.tsx         # Wishlist page
 │   │   ├── cart/page.tsx             # Cart page (quantity controls, checkout)
 │   │   ├── contact/page.tsx          # Contact form
+│   │   ├── cookie-policy/page.tsx   # Cookie policy
 │   │   ├── faq/page.tsx              # FAQ page
 │   │   ├── testimonials/page.tsx     # Testimonials
 │   │   ├── press/page.tsx            # Press releases

@@ -30,7 +30,7 @@
 14. Replaced all base64/low-quality images with Unsplash CDN URLs
 15. Created comprehensive documentation (FEATURES, ARCHITECTURE, CODE_REVIEW, DEFERRED, IDEAS)
 
-### Bugs found and fixed
+### Bugs found and fixed (migration session)
 - Supabase anon key couldn't see user data (RLS) — used service role key
 - Better Auth needed Pool adapter, not Drizzle adapter
 - Google OAuth 400 error — trailing newlines in Vercel env vars (from `<<<` in shell)
@@ -41,6 +41,19 @@
 - Calendar component broken — react-day-picker v9 uses different classNames than v8
 - Toaster component missing from layout — all toasts were invisible
 - 23 code review issues fixed (auth, validation, SQL safety, etc.)
+
+### Bugs found and fixed (E2E testing session)
+- **UUID mismatch (root cause of most auth bugs):** Better Auth generates nanoid user IDs but schema defined `userId` columns as `uuid` type — Postgres rejected all authenticated writes (cart, wishlist, views, bookings). Fixed by changing 12 columns across 10 tables from `uuid` to `text` via direct ALTER TABLE SQL.
+- **Calendar popover clipped by map:** Leaflet map's high z-index covered the date picker popover. Fixed with `.leaflet-container { z-index: 0 !important; }` in globals.css.
+- **Broken Leaflet marker icons:** Next.js bundling broke default Leaflet marker icon paths. Fixed with `L.Icon.Default.mergeOptions()` pointing to CDN URLs.
+- **Cookie Policy 404:** Footer linked to `/cookie-policy` but the page didn't exist. Created `src/app/cookie-policy/page.tsx`.
+- **Search URL param not syncing:** Navigating to `/experiences?search=X` from the Navbar search didn't update the search input. Fixed with a `useEffect` that syncs `searchQuery` state from `useSearchParams`.
+- **Cart item images broken:** Next.js `Image` component used with external Unsplash URLs without `remotePatterns` config. Replaced with standard `<img>` tags. Also added `remotePatterns` to `next.config.ts` for Unsplash and Google domains.
+- **Razorpay 401 "Authentication failed":** Vercel environment variables for Razorpay keys had trailing newline characters. Removed and re-added them with clean values.
+- **Razorpay payment modal errors:** After key fix, Razorpay SDK modal showed errors — traced to Razorpay account configuration (payment methods not enabled for test mode), not a code bug.
+- **Payment success redirect to 404:** Cart page redirected to `/bookings` after payment, which didn't exist. Changed to `/profile?tab=bookings`. Profile page updated to read `tab` query param and open the correct tab.
+- **No booking created after payment:** The payment verify endpoint only created a `payments` record, never a `bookings` record. Added `POST /api/bookings` call in `handlePaymentSuccess` to create the booking with cart items before clearing cart.
+- **Razorpay checkout improvements:** Added `modal.ondismiss` handler to reset loading state, stabilized `onFailure` callback with `useRef`, passed `bookingData` (amount, currency) to verify endpoint, improved error messages in toasts and server logs.
 
 ---
 
@@ -109,6 +122,18 @@ The experiences data had image_url as JSON arrays, date as text ("Available dail
 ### 10. Always update docs after changes
 Created .cursor/rules/docs.mdc to remind: update FEATURES.md, CODE_REVIEW.md, DEFERRED.md, ARCHITECTURE.md, IDEAS.md after every change.
 
+### 11. Better Auth uses nanoid IDs, not UUIDs
+Better Auth generates user IDs like `JmFGa1jmQy8h8cUMrl0H1Zo1hZ7DsCuT` (nanoid), not standard UUIDs. Any table with a `userId` column referencing Better Auth users must use `text` type, not `uuid`.
+
+### 12. Vercel env vars from CLI can have trailing characters
+When adding environment variables via `vercel env add` or even the Vercel dashboard (copy-paste), trailing newlines or whitespace can silently corrupt API keys. Always verify with a direct API call after setting keys.
+
+### 13. Next.js Image requires remotePatterns for external URLs
+Using `<Image>` with external domains (Unsplash, Google) requires `images.remotePatterns` in `next.config.ts`. If not configured, images silently fail. Standard `<img>` tags work without config.
+
+### 14. Payment flow must create bookings, not just payment records
+A payment record (`payments` table) is not the same as a booking (`bookings` + `booking_items` tables). Both must be created — payment for the financial record, booking for the user-facing order history.
+
 ---
 
 ## Current state of the app
@@ -116,17 +141,18 @@ Created .cursor/rules/docs.mdc to remind: update FEATURES.md, CODE_REVIEW.md, DE
 ### What works
 - Homepage with hero, featured experiences, trending, categories, stats
 - All Experiences with search, filters, sort, grouping by exp_type, ImageTrail
-- Experience detail with image, booking section, Leaflet map, similar experiences
+- Experience detail with image, booking section, Leaflet map (with working markers), similar experiences
 - Google Sign-In / Sign-Out via Better Auth
-- Cart (add, remove, update quantity, checkout with Razorpay)
+- Cart (add, remove, update quantity, images display correctly)
+- Checkout with Razorpay (payment → booking creation → redirect to profile)
 - Wishlist (toggle, list)
 - Save for Later (localStorage)
-- Profile (edit, stats, tabs for wishlist/saved/bookings/viewed)
+- Profile (edit, stats, tabs for wishlist/saved/bookings/viewed — all tabs functional)
+- View history tracking (authenticated users)
 - Gift Personalizer (question wizard — fails at suggestion step due to missing embeddings)
-- FAQ, About, Contact, Privacy, Terms, Testimonials, Press
+- FAQ, About, Contact, Privacy, Terms, Cookie Policy, Testimonials, Press
 - Location selection (80+ Indian cities, distance calculation)
-- Search autocomplete with grouped results
-- 26/26 smoke tests passing
+- Search autocomplete with grouped results, URL param sync
 
 ### What needs attention next (from IDEAS.md)
 1. Send pitch deck to align vision

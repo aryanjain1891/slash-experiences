@@ -1,6 +1,6 @@
 # Slash Experiences — Feature List
 
-> 28 features across 10 categories. Each entry lists what it does, the files that implement it, the API endpoints it hits, the database tables it touches, and its current status.
+> 28 features across 10 categories (including Cookie Policy under #23). Each entry lists what it does, the files that implement it, the API endpoints it hits, the database tables it touches, and its current status.
 
 ---
 
@@ -167,10 +167,10 @@
 
 ### 8b. Cart Page
 
-**What it does:** A dedicated `/cart` page showing all cart items with full UI. Each item displays the experience image, title, price, selected date, and quantity controls (increment/decrement buttons). Users can remove individual items or clear the entire cart. The page shows a price breakdown with subtotal and total, and integrates the `RazorpayPayment` component for checkout. Unauthenticated users are redirected to sign in.
+**What it does:** A dedicated `/cart` page showing all cart items with full UI. Each item displays the experience image (standard `<img>` tag for Unsplash compatibility), title, price, selected date, and quantity controls (increment/decrement buttons). Users can remove individual items or clear the entire cart. The page shows a price breakdown with subtotal and total, and integrates the `RazorpayPayment` component for checkout. After successful payment, the page creates a booking record via `POST /api/bookings` with all cart items, then clears the cart and redirects to `/profile?tab=bookings`. Unauthenticated users are redirected to sign in.
 
 **Files:**
-- `src/app/cart/page.tsx` — cart page with quantity controls and Razorpay checkout
+- `src/app/cart/page.tsx` — cart page with quantity controls, Razorpay checkout, and post-payment booking creation
 - `src/contexts/CartContext.tsx` — provides `items`, `updateQuantity`, `removeFromCart`, `clearCart`
 - `src/components/RazorpayPayment.tsx` — checkout component
 
@@ -179,8 +179,10 @@
 - `PATCH /api/cart` — update item quantity
 - `DELETE /api/cart` — remove item or clear cart
 - `POST /api/payment/create-order` — create Razorpay order at checkout
+- `POST /api/payment/verify` — verify payment after Razorpay modal completes
+- `POST /api/bookings` — create booking record with cart items after payment
 
-**Database tables:** `cart_items`, `experiences` (joined)
+**Database tables:** `cart_items`, `experiences` (joined), `bookings`, `booking_items`, `payments`
 
 **Status:** Live
 
@@ -299,16 +301,17 @@
 
 ### 14. Bookings
 
-**What it does:** Displays a user's order history. Bookings are created after successful payment verification. Each booking has items, a total amount, status, and payment method. Shown in the Profile page "Bookings" tab.
+**What it does:** Displays a user's order history. Bookings are created by the cart page after successful Razorpay payment verification. Each booking has items (experience, quantity, price at time of booking), a total amount, status, and payment method. Shown in the Profile page "Bookings" tab, which auto-opens when redirected from checkout via the `?tab=bookings` query parameter. The profile page reads `useSearchParams()` to set the active tab.
 
 **Files:**
 - `src/app/api/bookings/route.ts` — GET (list), POST (create)
 - `src/db/queries/bookings.ts` — `getBookingsByUser`, `createBooking`
-- `src/app/profile/page.tsx` — bookings tab
+- `src/app/profile/page.tsx` — bookings tab (reads `tab` query param via `useSearchParams`)
+- `src/app/cart/page.tsx` — calls `POST /api/bookings` after payment success
 
 **API endpoints:**
 - `GET /api/bookings` — user's bookings with items
-- `POST /api/bookings` — body: `{ totalAmount, paymentMethod, notes, items }`
+- `POST /api/bookings` — body: `{ totalAmount, paymentMethod, items: [{ experienceId, quantity, priceAtBooking }] }`
 
 **Database tables:** `bookings`, `booking_items`, `experiences` (joined)
 
@@ -355,7 +358,7 @@
 
 ### 17. Razorpay Checkout Component
 
-**What it does:** Client-side component that loads the Razorpay checkout.js script, opens the payment modal with the order details, and handles the success/failure callbacks. Prefills user name and email from auth context.
+**What it does:** Client-side component that loads the Razorpay checkout.js script, opens the payment modal with the order details, and handles the success/failure callbacks. Prefills user name and email from auth context. On successful payment, calls the verify endpoint with `bookingData` (amount, currency). Includes a `modal.ondismiss` handler to reset loading state when users close the modal without paying. Uses `useRef` for the `onFailure` callback to prevent stale closures.
 
 **Files:**
 - `src/components/RazorpayPayment.tsx` — checkout component
@@ -459,13 +462,14 @@
 
 ---
 
-### 23. Terms & Privacy
+### 23. Terms, Privacy & Cookie Policy
 
-**What it does:** Static legal pages for Terms of Service and Privacy Policy.
+**What it does:** Static legal pages for Terms of Service, Privacy Policy, and Cookie Policy.
 
 **Files:**
 - `src/app/terms/page.tsx` — terms page
 - `src/app/privacy/page.tsx` — privacy page
+- `src/app/cookie-policy/page.tsx` — cookie policy page (explains cookies used: session token, location preference, search history, saved experiences)
 
 **API endpoints:** None (static content)
 
