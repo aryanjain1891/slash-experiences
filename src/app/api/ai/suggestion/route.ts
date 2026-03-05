@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
     );
 
     const { text } = await generateText({
-      model: google("gemini-2.0-flash"),
+      model: google("gemini-2.5-flash"),
       prompt: `You are a friendly gift experience advisor. Based on the user's preferences:
 - Recipient: ${session.answers?.recipient ?? "someone special"}
 - Occasion: ${session.answers?.occasion ?? "a special occasion"}
