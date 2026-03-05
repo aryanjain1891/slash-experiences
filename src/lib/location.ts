@@ -72,6 +72,7 @@ export function formatDistance(km: number): string {
 
 /**
  * Read the selected city from localStorage (`selected_city` key).
+ * Returns `null` on the server (no `window` available).
  */
 export function getSelectedCity(): string | null {
   if (typeof window === "undefined") return null;

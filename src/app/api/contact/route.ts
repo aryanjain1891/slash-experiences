@@ -3,6 +3,13 @@ import nodemailer from "nodemailer";
 
 export async function POST(request: NextRequest) {
   try {
+    if (!process.env.SMTP_HOST || !process.env.SMTP_USER) {
+      return NextResponse.json(
+        { error: "Email not configured" },
+        { status: 503 }
+      );
+    }
+
     const { name, email, subject, message } = await request.json();
 
     if (!name || !email || !subject || !message) {

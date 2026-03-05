@@ -18,7 +18,7 @@ export default function ExperienceTypePage() {
     const load = async () => {
       setIsLoading(true);
       try {
-        const res = await fetch(`/api/experiences?type=${encodeURIComponent(typeName)}`);
+        const res = await fetch(`/api/experiences?expType=${encodeURIComponent(typeName)}`);
         if (res.ok) {
           const data = await res.json();
           const list = Array.isArray(data) ? data : data.experiences ?? [];

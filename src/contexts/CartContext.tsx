@@ -5,18 +5,27 @@ import { useAuth } from "@/contexts/AuthContext";
 
 export interface CartItem {
   id: string;
-  experienceId: string;
+  experience_id: string;
   title: string;
   price: number;
   quantity: number;
-  imageUrl?: string;
+  image_url?: string;
+  selected_date?: string;
+  selected_time?: string;
+}
+
+interface AddToCartParams {
+  experienceId: string;
+  quantity?: number;
+  selectedDate?: string;
+  selectedTime?: string;
 }
 
 interface CartContextType {
   items: CartItem[];
   itemCount: number;
   isLoading: boolean;
-  addToCart: (item: Omit<CartItem, "quantity">) => Promise<void>;
+  addToCart: (params: AddToCartParams) => Promise<void>;
   removeFromCart: (id: string) => Promise<void>;
   updateQuantity: (id: string, quantity: number) => Promise<void>;
   clearCart: () => Promise<void>;
@@ -39,7 +48,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const res = await fetch("/api/cart");
       if (res.ok) {
         const data = await res.json();
-        setItems(data.items ?? []);
+        setItems(Array.isArray(data) ? data : data.items ?? []);
       }
     } catch (err) {
       console.error("Failed to fetch cart:", err);
@@ -52,12 +61,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     fetchCart();
   }, [fetchCart]);
 
-  const addToCart = async (item: Omit<CartItem, "quantity">) => {
+  const addToCart = async ({ experienceId, quantity, selectedDate, selectedTime }: AddToCartParams) => {
     try {
       const res = await fetch("/api/cart", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "add", ...item }),
+        body: JSON.stringify({ experienceId, quantity: quantity ?? 1, selectedDate, selectedTime }),
       });
       if (res.ok) await fetchCart();
     } catch (err) {
@@ -68,9 +77,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const removeFromCart = async (id: string) => {
     try {
       const res = await fetch("/api/cart", {
-        method: "POST",
+        method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "remove", id }),
+        body: JSON.stringify({ id }),
       });
       if (res.ok) await fetchCart();
     } catch (err) {
@@ -80,12 +89,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const updateQuantity = async (id: string, quantity: number) => {
     try {
-      const res = await fetch("/api/cart", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "update", id, quantity }),
-      });
-      if (res.ok) await fetchCart();
+      await removeFromCart(id);
+      const item = items.find((i) => i.id === id);
+      if (item) {
+        await addToCart({
+          experienceId: item.experience_id,
+          quantity,
+          selectedDate: item.selected_date,
+          selectedTime: item.selected_time,
+        });
+      }
     } catch (err) {
       console.error("Failed to update cart:", err);
     }
@@ -93,10 +106,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const clearCart = async () => {
     try {
-      const res = await fetch("/api/cart", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "clear" }),
+      const res = await fetch("/api/cart?clear=true", {
+        method: "DELETE",
       });
       if (res.ok) setItems([]);
     } catch (err) {

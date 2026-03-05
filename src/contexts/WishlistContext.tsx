@@ -29,7 +29,7 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
       const res = await fetch("/api/wishlist");
       if (res.ok) {
         const data = await res.json();
-        const ids = (data.items ?? []).map((i: { experienceId: string }) => i.experienceId);
+        const ids = (data.items ?? []).map((i: { experience_id?: string; experienceId?: string }) => i.experience_id || i.experienceId);
         setWishlistedIds(new Set(ids));
       }
     } catch (err) {

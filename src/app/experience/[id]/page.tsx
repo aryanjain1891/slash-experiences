@@ -96,8 +96,8 @@ export default function ExperienceDetailPage() {
           router.replace("/experiences");
           return;
         }
-        const data: Experience = await res.json();
-        setExperience(data);
+        const { experience } = await res.json();
+        setExperience(experience);
       } catch {
         router.replace("/experiences");
       } finally {
@@ -154,11 +154,9 @@ export default function ExperienceDetailPage() {
     setIsCartLoading(true);
     try {
       await addToCart({
-        id: experience.id,
         experienceId: experience.id,
-        title: experience.title,
-        price: parseFloat(String(experience.price)) || 0,
-        imageUrl: getValidImgSrc(experience.image_url),
+        quantity,
+        selectedDate: selectedDate?.toISOString(),
       });
       toast.success("Added to cart!");
     } catch {

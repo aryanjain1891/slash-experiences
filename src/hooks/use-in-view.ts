@@ -30,7 +30,7 @@ export function useInView<T extends HTMLElement>(
     );
 
     observer.observe(currentRef);
-    return () => observer.unobserve(currentRef);
+    return () => observer.disconnect();
   }, [threshold, rootMargin, triggerOnce]);
 
   return [ref, isInView];

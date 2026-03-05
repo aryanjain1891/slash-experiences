@@ -43,6 +43,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { totalAmount, paymentMethod, notes, items } = body;
 
+    if (!totalAmount || !items?.length) {
+      return NextResponse.json(
+        { error: "totalAmount and items are required" },
+        { status: 400 }
+      );
+    }
+
     const booking = await createBooking({
       userId: session.user.id,
       totalAmount,

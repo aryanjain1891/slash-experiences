@@ -42,12 +42,12 @@ export async function GET(request: NextRequest) {
       value: queryText,
     });
 
-    const vectorStr = `[${embedding.join(",")}]`;
+    const vectorLiteral = `[${embedding.join(",")}]`;
 
     const experiences = await db.execute(
       sql`SELECT id, title, description, image_url, price, location, duration, participants, date, category, niche_category, trending, featured, romantic, adventurous, group_activity
           FROM experiences
-          ORDER BY embedding <=> ${vectorStr}::vector
+          ORDER BY embedding <=> ${vectorLiteral}::vector
           LIMIT ${k}`
     );
 

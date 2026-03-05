@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Mail, Phone, MapPin, CheckCircle } from "lucide-react";
 
+const CONTACT_EMAIL = "aryan@slashexperiences.in";
+
 export default function ContactPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -54,8 +56,8 @@ export default function ContactPage() {
                   <Mail className="h-5 w-5 text-primary mt-1" />
                   <div>
                     <p className="font-medium">Email</p>
-                    <a href="mailto:aryan@slashexperiences.in" className="text-muted-foreground hover:text-primary">
-                      aryan@slashexperiences.in
+                    <a href={`mailto:${CONTACT_EMAIL}`} className="text-muted-foreground hover:text-primary">
+                      {CONTACT_EMAIL}
                     </a>
                   </div>
                 </div>

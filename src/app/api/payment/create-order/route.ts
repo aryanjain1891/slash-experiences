@@ -10,6 +10,13 @@ function getRazorpay() {
 
 export async function POST(request: NextRequest) {
   try {
+    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+      return NextResponse.json(
+        { error: "Payment not configured" },
+        { status: 503 }
+      );
+    }
+
     const { amount, currency } = await request.json();
 
     if (!amount || amount <= 0) {

@@ -14,7 +14,7 @@ export default function WishlistPage() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { toggleWishlist, isWishlisted } = useWishlist();
   const router = useRouter();
-  const [experiences, setExperiences] = useState<Experience[]>([]);
+  const [experiences, setExperiences] = useState<(Experience & { experience_id?: string })[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -55,22 +55,25 @@ export default function WishlistPage() {
 
       {experiences.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {experiences.map((exp) => (
-            <ExperienceCard
-              key={exp.id}
-              id={exp.id}
-              title={exp.title}
-              description={exp.description}
-              image_url={exp.image_url}
-              price={exp.price}
-              location={exp.location}
-              duration={exp.duration}
-              category={exp.category}
-              niche_category={exp.niche_category}
-              isWishlisted={isWishlisted(exp.id)}
-              onToggleWishlist={toggleWishlist}
-            />
-          ))}
+          {experiences.map((exp) => {
+            const expId = exp.experience_id || exp.id;
+            return (
+              <ExperienceCard
+                key={expId}
+                id={expId}
+                title={exp.title}
+                description={exp.description}
+                image_url={exp.image_url}
+                price={exp.price}
+                location={exp.location}
+                duration={exp.duration}
+                category={exp.category}
+                niche_category={exp.niche_category}
+                isWishlisted={isWishlisted(expId)}
+                onToggleWishlist={toggleWishlist}
+              />
+            );
+          })}
         </div>
       ) : (
         <div className="text-center py-16">

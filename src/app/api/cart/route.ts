@@ -72,6 +72,14 @@ export async function DELETE(request: NextRequest) {
 
     const body = await request.json();
     const { id } = body;
+
+    if (!id) {
+      return NextResponse.json(
+        { error: "id required" },
+        { status: 400 }
+      );
+    }
+
     const item = await removeFromCart(id, session.user.id);
 
     return NextResponse.json(toSnakeCase(item));

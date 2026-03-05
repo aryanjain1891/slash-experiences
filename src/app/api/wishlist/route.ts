@@ -43,6 +43,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { experienceId } = body;
 
+    if (!experienceId) {
+      return NextResponse.json(
+        { error: "experienceId required" },
+        { status: 400 }
+      );
+    }
+
     const result = await toggleWishlist(session.user.id, experienceId);
     return NextResponse.json(result);
   } catch (error) {

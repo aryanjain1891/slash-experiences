@@ -20,12 +20,15 @@ export async function updateProfile(
     bio?: string;
   }
 ) {
+  const updates = Object.fromEntries(
+    Object.entries(data).filter(([, v]) => v !== undefined)
+  );
   const [profile] = await db
     .insert(profiles)
-    .values({ id: userId, ...data, updatedAt: new Date() })
+    .values({ id: userId, ...updates, updatedAt: new Date() })
     .onConflictDoUpdate({
       target: profiles.id,
-      set: { ...data, updatedAt: new Date() },
+      set: { ...updates, updatedAt: new Date() },
     })
     .returning();
   return profile;

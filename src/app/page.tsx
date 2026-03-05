@@ -195,7 +195,7 @@ export default function HomePage() {
         {/* ============================================================ */}
         <section
           ref={heroRef}
-          className="relative min-h-screen flex items-center justify-center overflow-hidden"
+          className="relative min-h-screen flex items-center justify-center overflow-hidden -mt-16"
           onMouseMove={handleMouseMove}
         >
           {/* Background images with crossfade */}

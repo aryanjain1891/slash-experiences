@@ -24,7 +24,7 @@ export default function PressPage() {
         const res = await fetch("/api/content/press");
         if (res.ok) {
           const data = await res.json();
-          setPressItems(data.items ?? []);
+          setPressItems(Array.isArray(data) ? data : data.items ?? []);
         }
       } catch (err) {
         console.error("Failed to load press:", err);
