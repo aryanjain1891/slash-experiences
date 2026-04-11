@@ -5,17 +5,22 @@ import { getSession, updateSession } from "@/db/queries/ai-sessions";
 import { db } from "@/db";
 import { sql } from "drizzle-orm";
 
+const MAX_QUESTION_LENGTH = 500;
+
 export async function GET(request: NextRequest) {
   try {
     const sessionId = request.nextUrl.searchParams.get("sessionId");
-    const question = request.nextUrl.searchParams.get("question");
+    const rawQuestion = request.nextUrl.searchParams.get("question");
 
-    if (!sessionId || !question) {
+    if (!sessionId || !rawQuestion) {
       return NextResponse.json(
         { error: "sessionId and question are required" },
         { status: 400 }
       );
     }
+
+    // Enforce input length limit to prevent prompt injection / cost abuse
+    const question = rawQuestion.slice(0, MAX_QUESTION_LENGTH);
 
     const session = await getSession(sessionId);
     if (!session) {
@@ -92,10 +97,9 @@ Write a warm, concise response (2-3 paragraphs) acknowledging their feedback and
       aiResponse,
     });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
-    console.error("Error handling follow-up:", msg);
+    console.error("Error handling follow-up:", error);
     return NextResponse.json(
-      { error: `Failed to handle follow-up: ${msg}` },
+      { error: "Failed to handle follow-up" },
       { status: 500 }
     );
   }

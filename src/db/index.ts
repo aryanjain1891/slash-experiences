@@ -2,6 +2,11 @@ import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
 import * as schema from "./schema";
 
+type DbInstance = ReturnType<typeof createDb>;
+
+// Store on globalThis to survive Next.js hot module reloads in development
+const globalForDb = globalThis as unknown as { _db?: DbInstance };
+
 function createDb() {
   if (!process.env.DATABASE_URL) {
     throw new Error(
@@ -12,19 +17,17 @@ function createDb() {
   return drizzle(sql, { schema });
 }
 
-let _db: ReturnType<typeof createDb> | null = null;
-
-export function getDb() {
-  if (!_db) {
-    _db = createDb();
+export function getDb(): DbInstance {
+  if (!globalForDb._db) {
+    globalForDb._db = createDb();
   }
-  return _db;
+  return globalForDb._db;
 }
 
-export const db = new Proxy({} as ReturnType<typeof createDb>, {
+export const db = new Proxy({} as DbInstance, {
   get(_, prop) {
     return (getDb() as unknown as Record<string | symbol, unknown>)[prop];
   },
 });
 
-export type Database = ReturnType<typeof createDb>;
+export type Database = DbInstance;

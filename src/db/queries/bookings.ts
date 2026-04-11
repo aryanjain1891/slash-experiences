@@ -1,4 +1,4 @@
-import { db } from "@/db";
+import { db, getDb } from "@/db";
 import { eq, desc } from "drizzle-orm";
 import { bookings, bookingItems, experiences } from "@/db/schema";
 
@@ -44,28 +44,31 @@ export async function createBooking(data: {
     priceAtBooking: string;
   }[];
 }) {
-  const [booking] = await db
-    .insert(bookings)
-    .values({
-      userId: data.userId,
-      totalAmount: data.totalAmount,
-      paymentMethod: data.paymentMethod,
-      status: data.status ?? "confirmed",
-      notes: data.notes,
-    })
-    .returning();
+  // Use a transaction so booking + items are atomic — no orphaned bookings on partial failure
+  return getDb().transaction(async (tx) => {
+    const [booking] = await tx
+      .insert(bookings)
+      .values({
+        userId: data.userId,
+        totalAmount: data.totalAmount,
+        paymentMethod: data.paymentMethod,
+        status: data.status ?? "confirmed",
+        notes: data.notes,
+      })
+      .returning();
 
-  const items = await db
-    .insert(bookingItems)
-    .values(
-      data.items.map((item) => ({
-        bookingId: booking.id,
-        experienceId: item.experienceId,
-        quantity: item.quantity,
-        priceAtBooking: item.priceAtBooking,
-      }))
-    )
-    .returning();
+    const items = await tx
+      .insert(bookingItems)
+      .values(
+        data.items.map((item) => ({
+          bookingId: booking.id,
+          experienceId: item.experienceId,
+          quantity: item.quantity,
+          priceAtBooking: item.priceAtBooking,
+        }))
+      )
+      .returning();
 
-  return { ...booking, items };
+    return { ...booking, items };
+  });
 }

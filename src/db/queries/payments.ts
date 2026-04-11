@@ -2,6 +2,14 @@ import { db } from "@/db";
 import { eq } from "drizzle-orm";
 import { payments } from "@/db/schema";
 
+export async function getPaymentByOrderId(razorpayOrderId: string) {
+  const [payment] = await db
+    .select()
+    .from(payments)
+    .where(eq(payments.razorpayOrderId, razorpayOrderId));
+  return payment ?? null;
+}
+
 export async function createPayment(data: {
   userId: string;
   bookingId?: string;
@@ -25,7 +33,7 @@ export async function createPayment(data: {
 export async function updatePaymentStatus(
   razorpayOrderId: string,
   razorpayPaymentId: string,
-  status: string
+  status: "paid" | "failed" | "pending"
 ) {
   const [payment] = await db
     .update(payments)

@@ -30,8 +30,8 @@ export async function getFeaturedExperiences() {
     .limit(8);
 }
 
-export async function searchExperiences(query: string) {
-  const pattern = `%${query}%`;
+export async function searchExperiences(query: string, limit = 50) {
+  const pattern = `%${query.slice(0, 200)}%`;
   return db
     .select()
     .from(experiences)
@@ -41,7 +41,8 @@ export async function searchExperiences(query: string) {
         OR ${experiences.location} ILIKE ${pattern}
         OR ${experiences.category} ILIKE ${pattern}`
     )
-    .orderBy(desc(experiences.createdAt));
+    .orderBy(desc(experiences.createdAt))
+    .limit(limit);
 }
 
 export async function getSimilarExperiences(

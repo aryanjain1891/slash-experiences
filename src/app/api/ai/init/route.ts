@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createSession } from "@/db/queries/ai-sessions";
 import { QUESTIONS } from "@/lib/ai-questions";
 
-export async function GET() {
+export async function POST() {
   try {
     const sessionId = crypto.randomUUID();
     await createSession(sessionId);

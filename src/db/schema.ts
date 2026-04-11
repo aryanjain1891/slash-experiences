@@ -11,6 +11,7 @@ import {
   json,
   pgEnum,
   index,
+  uniqueIndex,
   vector,
 } from "drizzle-orm/pg-core";
 
@@ -78,6 +79,9 @@ export const experiences = pgTable(
   },
   (table) => [
     index("idx_experiences_category").on(table.category),
+    index("idx_experiences_featured").on(table.featured),
+    index("idx_experiences_trending").on(table.trending),
+    index("idx_experiences_location").on(table.location),
   ]
 );
 
@@ -107,72 +111,110 @@ export const connections = pgTable("connections", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
-export const viewedExperiences = pgTable("viewed_experiences", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  userId: text("user_id").notNull(),
-  experienceId: uuid("experience_id")
-    .notNull()
-    .references(() => experiences.id, { onDelete: "cascade" }),
-  viewedAt: timestamp("viewed_at", { withTimezone: true }).defaultNow(),
-});
+export const viewedExperiences = pgTable(
+  "viewed_experiences",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: text("user_id").notNull(),
+    experienceId: uuid("experience_id")
+      .notNull()
+      .references(() => experiences.id, { onDelete: "cascade" }),
+    viewedAt: timestamp("viewed_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => [
+    index("idx_viewed_experiences_user_id").on(table.userId),
+  ]
+);
 
 // ── Commerce ──
 
-export const cartItems = pgTable("cart_items", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  userId: text("user_id").notNull(),
-  experienceId: uuid("experience_id")
-    .notNull()
-    .references(() => experiences.id, { onDelete: "cascade" }),
-  quantity: integer("quantity").notNull().default(1),
-  selectedDate: timestamp("selected_date", { withTimezone: true }),
-  selectedTime: text("selected_time"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
-});
+export const cartItems = pgTable(
+  "cart_items",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: text("user_id").notNull(),
+    experienceId: uuid("experience_id")
+      .notNull()
+      .references(() => experiences.id, { onDelete: "cascade" }),
+    quantity: integer("quantity").notNull().default(1),
+    selectedDate: timestamp("selected_date", { withTimezone: true }),
+    selectedTime: text("selected_time"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => [
+    index("idx_cart_items_user_id").on(table.userId),
+    uniqueIndex("uq_cart_items_user_experience").on(table.userId, table.experienceId),
+  ]
+);
 
-export const wishlists = pgTable("wishlists", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  userId: text("user_id").notNull(),
-  experienceId: uuid("experience_id")
-    .notNull()
-    .references(() => experiences.id, { onDelete: "cascade" }),
-  addedAt: timestamp("added_at", { withTimezone: true }).defaultNow(),
-});
+export const wishlists = pgTable(
+  "wishlists",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: text("user_id").notNull(),
+    experienceId: uuid("experience_id")
+      .notNull()
+      .references(() => experiences.id, { onDelete: "cascade" }),
+    addedAt: timestamp("added_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => [
+    index("idx_wishlists_user_id").on(table.userId),
+    uniqueIndex("uq_wishlists_user_experience").on(table.userId, table.experienceId),
+  ]
+);
 
-export const bookings = pgTable("bookings", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  userId: text("user_id").notNull(),
-  totalAmount: decimal("total_amount", { precision: 10, scale: 2 }),
-  status: varchar("status", { length: 50 }).default("pending"),
-  paymentMethod: varchar("payment_method", { length: 50 }),
-  notes: text("notes"),
-  bookingDate: timestamp("booking_date", { withTimezone: true }).defaultNow(),
-});
+export const bookings = pgTable(
+  "bookings",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: text("user_id").notNull(),
+    totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
+    status: varchar("status", { length: 50 }).default("pending"),
+    paymentMethod: varchar("payment_method", { length: 50 }),
+    notes: text("notes"),
+    bookingDate: timestamp("booking_date", { withTimezone: true }).defaultNow(),
+  },
+  (table) => [
+    index("idx_bookings_user_id").on(table.userId),
+  ]
+);
 
-export const bookingItems = pgTable("booking_items", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  bookingId: uuid("booking_id")
-    .notNull()
-    .references(() => bookings.id, { onDelete: "cascade" }),
-  experienceId: uuid("experience_id")
-    .notNull()
-    .references(() => experiences.id, { onDelete: "cascade" }),
-  quantity: integer("quantity").notNull().default(1),
-  priceAtBooking: decimal("price_at_booking", { precision: 10, scale: 2 }),
-});
+export const bookingItems = pgTable(
+  "booking_items",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    bookingId: uuid("booking_id")
+      .notNull()
+      .references(() => bookings.id, { onDelete: "cascade" }),
+    experienceId: uuid("experience_id")
+      .notNull()
+      .references(() => experiences.id, { onDelete: "cascade" }),
+    quantity: integer("quantity").notNull().default(1),
+    priceAtBooking: decimal("price_at_booking", { precision: 10, scale: 2 }).notNull(),
+  },
+  (table) => [
+    index("idx_booking_items_booking_id").on(table.bookingId),
+  ]
+);
 
-export const payments = pgTable("payments", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  userId: text("user_id").notNull(),
-  bookingId: uuid("booking_id").references(() => bookings.id),
-  razorpayOrderId: varchar("razorpay_order_id", { length: 255 }),
-  razorpayPaymentId: varchar("razorpay_payment_id", { length: 255 }),
-  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
-  currency: varchar("currency", { length: 10 }).default("INR"),
-  status: varchar("status", { length: 50 }).default("pending"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-});
+export const payments = pgTable(
+  "payments",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: text("user_id").notNull(),
+    bookingId: uuid("booking_id").references(() => bookings.id),
+    razorpayOrderId: varchar("razorpay_order_id", { length: 255 }),
+    razorpayPaymentId: varchar("razorpay_payment_id", { length: 255 }),
+    amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+    currency: varchar("currency", { length: 10 }).default("INR"),
+    status: varchar("status", { length: 50 }).default("pending"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("uq_payments_razorpay_order_id").on(table.razorpayOrderId),
+  ]
+);
 
 // ── AI ──
 

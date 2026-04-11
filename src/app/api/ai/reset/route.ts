@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { deleteSession } from "@/db/queries/ai-sessions";
 
-export async function GET(request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const sessionId = request.nextUrl.searchParams.get("sessionId");
+    const { sessionId } = await request.json();
 
     if (!sessionId) {
       return NextResponse.json(

@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import Razorpay from "razorpay";
+import crypto from "crypto";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import { getCart } from "@/db/queries/cart";
+
+const ALLOWED_CURRENCIES = new Set(["INR"]);
 
 function getRazorpay() {
   return new Razorpay({
@@ -12,11 +16,6 @@ function getRazorpay() {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
       return NextResponse.json(
         { error: "Payment not configured" },
@@ -24,28 +23,42 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { amount, currency } = await request.json();
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-    if (!amount || amount <= 0) {
-      return NextResponse.json(
-        { error: "Valid amount is required" },
-        { status: 400 }
-      );
+    const body = await request.json();
+    const resolvedCurrency =
+      typeof body?.currency === "string" && ALLOWED_CURRENCIES.has(body.currency)
+        ? body.currency
+        : "INR";
+
+    // Compute amount server-side from the user's actual cart — never trust client amount
+    const cartItems = await getCart(session.user.id);
+    if (!cartItems.length) {
+      return NextResponse.json({ error: "Cart is empty" }, { status: 400 });
+    }
+    const totalAmount = cartItems.reduce(
+      (sum, item) => sum + parseFloat(item.price as string) * item.quantity,
+      0
+    );
+    if (totalAmount <= 0) {
+      return NextResponse.json({ error: "Invalid cart total" }, { status: 400 });
     }
 
     const razorpay = getRazorpay();
     const order = await razorpay.orders.create({
-      amount: amount * 100,
-      currency: currency || "INR",
-      receipt: `receipt_${Date.now()}`,
+      amount: Math.round(totalAmount * 100),
+      currency: resolvedCurrency,
+      receipt: `receipt_${crypto.randomUUID()}`,
     });
 
-    return NextResponse.json(order);
+    return NextResponse.json({ ...order, serverAmount: totalAmount });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : JSON.stringify(error);
-    console.error("Error creating Razorpay order:", msg);
+    console.error("Error creating Razorpay order:", error);
     return NextResponse.json(
-      { error: `Failed to create order: ${msg}` },
+      { error: "Failed to create order" },
       { status: 500 }
     );
   }

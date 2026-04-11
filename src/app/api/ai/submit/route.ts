@@ -4,14 +4,17 @@ import { QUESTIONS } from "@/lib/ai-questions";
 
 export async function POST(request: NextRequest) {
   try {
-    const { sessionId, answer } = await request.json();
+    const { sessionId, answer: rawAnswer } = await request.json();
 
-    if (!sessionId || !answer) {
+    if (!sessionId || !rawAnswer) {
       return NextResponse.json(
         { error: "sessionId and answer are required" },
         { status: 400 }
       );
     }
+
+    // Cap answer length to prevent storing unbounded user input
+    const answer = typeof rawAnswer === "string" ? rawAnswer.slice(0, 500) : String(rawAnswer).slice(0, 500);
 
     const session = await getSession(sessionId);
     if (!session) {

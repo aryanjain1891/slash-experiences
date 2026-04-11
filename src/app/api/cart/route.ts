@@ -38,11 +38,25 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { experienceId, quantity, selectedDate, selectedTime } = body;
 
+    if (typeof experienceId !== "string" || !experienceId) {
+      return NextResponse.json({ error: "experienceId is required" }, { status: 400 });
+    }
+
+    const resolvedQuantity = Number.isInteger(quantity) && quantity >= 1 && quantity <= 100 ? quantity : 1;
+
+    let parsedDate: Date | undefined;
+    if (selectedDate) {
+      parsedDate = new Date(selectedDate);
+      if (isNaN(parsedDate.getTime())) {
+        return NextResponse.json({ error: "Invalid selectedDate" }, { status: 400 });
+      }
+    }
+
     const item = await addToCart(
       session.user.id,
       experienceId,
-      quantity ?? 1,
-      selectedDate ? new Date(selectedDate) : undefined,
+      resolvedQuantity,
+      parsedDate,
       selectedTime
     );
 

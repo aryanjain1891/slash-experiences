@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { getBookingsByUser, createBooking } from "@/db/queries/bookings";
+import { getExperienceById } from "@/db/queries/experiences";
 import { toSnakeCase } from "@/lib/api-utils";
 
 function mapBooking(booking: Record<string, unknown>) {
@@ -41,21 +42,47 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { totalAmount, paymentMethod, notes, items } = body;
+    const { paymentMethod, notes, items } = body;
 
-    if (!totalAmount || !items?.length) {
+    if (!Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
-        { error: "totalAmount and items are required" },
+        { error: "items are required" },
         { status: 400 }
       );
     }
 
+    // Validate each item and compute totalAmount server-side from DB prices
+    const resolvedItems: { experienceId: string; quantity: number; priceAtBooking: string }[] = [];
+    let totalAmount = 0;
+
+    for (const item of items) {
+      const { experienceId, quantity } = item;
+      if (typeof experienceId !== "string" || !Number.isInteger(quantity) || quantity < 1 || quantity > 100) {
+        return NextResponse.json(
+          { error: "Invalid item: experienceId must be a string and quantity must be 1-100" },
+          { status: 400 }
+        );
+      }
+      const experience = await getExperienceById(experienceId);
+      if (!experience) {
+        return NextResponse.json(
+          { error: `Experience ${experienceId} not found` },
+          { status: 404 }
+        );
+      }
+      const price = parseFloat(experience.price as string);
+      totalAmount += price * quantity;
+      resolvedItems.push({ experienceId, quantity, priceAtBooking: String(price) });
+    }
+
+    const notes_safe = typeof notes === "string" ? notes.slice(0, 1000) : undefined;
+
     const booking = await createBooking({
       userId: session.user.id,
-      totalAmount,
+      totalAmount: String(totalAmount.toFixed(2)),
       paymentMethod,
-      notes,
-      items,
+      notes: notes_safe,
+      items: resolvedItems,
     });
 
     return NextResponse.json(mapBooking(booking), { status: 201 });

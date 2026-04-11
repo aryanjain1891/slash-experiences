@@ -174,11 +174,9 @@ Write a warm, personalized recommendation (2-3 short paragraphs) explaining why 
       aiResponse,
     });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
-    const stack = error instanceof Error ? error.stack : undefined;
-    console.error("Error generating suggestions:", msg, stack);
+    console.error("Error generating suggestions:", error);
     return NextResponse.json(
-      { error: `Failed to generate suggestions: ${msg}` },
+      { error: "Failed to generate suggestions" },
       { status: 500 }
     );
   }

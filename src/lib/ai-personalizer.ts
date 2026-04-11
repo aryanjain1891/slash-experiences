@@ -13,7 +13,7 @@ export async function initSession() {
   return fetchJSON<{
     sessionId: string;
     question: { id: string; text: string; options: string[] };
-  }>(`${BASE}/init`);
+  }>(`${BASE}/init`, { method: "POST" });
 }
 
 export async function submitAnswer(sessionId: string, answer: string) {
@@ -55,11 +55,17 @@ export async function askFollowup(sessionId: string, question: string) {
 export async function goBack(sessionId: string) {
   return fetchJSON<{
     question: { id: string; text: string; options: string[] };
-  }>(`${BASE}/back?sessionId=${encodeURIComponent(sessionId)}`);
+  }>(`${BASE}/back`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sessionId }),
+  });
 }
 
 export async function resetSession(sessionId: string) {
-  return fetchJSON<{ success: boolean }>(
-    `${BASE}/reset?sessionId=${encodeURIComponent(sessionId)}`
-  );
+  return fetchJSON<{ success: boolean }>(`${BASE}/reset`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sessionId }),
+  });
 }
