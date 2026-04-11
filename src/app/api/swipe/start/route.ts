@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
               SELECT AVG(embedding) as avg_emb FROM recent_views
             )
             SELECT e.id, e.title, e.description, e.image_url, e.price, e.location,
-                   e.duration, e.participants, e.date, e.category, e.niche_category,
+                   e.duration, e.participants, e.availability, e.category,
                    e.trending, e.featured, e.romantic, e.adventurous, e.group_activity
             FROM experiences e, avg_embedding a
             WHERE a.avg_emb IS NOT NULL
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
 
     const results = await db.execute(
       sql`SELECT id, title, description, image_url, price, location,
-                 duration, participants, date, category, niche_category,
+                 duration, participants, availability, category,
                  trending, featured, romantic, adventurous, group_activity
           FROM experiences
           ORDER BY RANDOM()

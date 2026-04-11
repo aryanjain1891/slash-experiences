@@ -332,7 +332,6 @@ export default function HomePage() {
                     duration={exp.duration}
                     participants={exp.participants}
                     category={exp.category}
-                    niche_category={exp.niche_category}
                     trending={exp.trending}
                     featured={exp.featured}
                     romantic={exp.romantic}
@@ -655,7 +654,6 @@ export default function HomePage() {
                           duration={exp.duration}
                           participants={exp.participants}
                           category={exp.category}
-                          niche_category={exp.niche_category}
                           trending={exp.trending}
                           featured={exp.featured}
                           romantic={exp.romantic}

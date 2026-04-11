@@ -1190,8 +1190,15 @@ export default function Navbar({ isDarkPageProp = false }: NavbarProps) {
             const allFlat = [...grouped.titleMatches, ...grouped.locationMatches, ...grouped.categoryMatches];
 
             const renderResult = (experience: SearchResult, flatIndex: number) => {
-              const thumb =
-                experience.imageUrl?.[0] ?? experience.images?.[0] ?? (typeof experience.image_url === "string" ? experience.image_url : null);
+              const thumb = (() => {
+                const raw = experience.imageUrl ?? experience.images ?? experience.image_url;
+                if (!raw) return null;
+                if (Array.isArray(raw)) return raw[0] ?? null;
+                if (typeof raw === "string" && raw.startsWith("[")) {
+                  try { const p = JSON.parse(raw); return Array.isArray(p) ? (p[0] ?? null) : raw; } catch { return raw; }
+                }
+                return typeof raw === "string" ? raw : null;
+              })();
               const priceVal = experience.price != null ? parseFloat(String(experience.price)) : null;
               return (
                 <button

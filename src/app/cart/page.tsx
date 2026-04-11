@@ -9,20 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import RazorpayPayment from "@/components/RazorpayPayment";
-
-function getValidImgSrc(src: unknown): string {
-  if (!src) return "/assets/placeholder.jpg";
-  if (Array.isArray(src)) return getValidImgSrc(src[0]);
-  if (typeof src !== "string") return "/assets/placeholder.jpg";
-  const trimmed = src.trim();
-  if (trimmed.startsWith("[")) {
-    try {
-      const parsed = JSON.parse(trimmed);
-      if (Array.isArray(parsed) && parsed.length > 0) return getValidImgSrc(parsed[0]);
-    } catch { /* fall through */ }
-  }
-  return trimmed || "/assets/placeholder.jpg";
-}
+import { getValidImgSrc } from "@/lib/image-utils";
 
 export default function CartPage() {
   const { items, isLoading, removeFromCart, updateQuantity, clearCart } = useCart();

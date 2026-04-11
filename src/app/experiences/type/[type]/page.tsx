@@ -57,7 +57,6 @@ export default function ExperienceTypePage() {
               location={exp.location}
               duration={exp.duration}
               category={exp.category}
-              niche_category={exp.niche_category}
               isWishlisted={isWishlisted(exp.id)}
               onToggleWishlist={toggleWishlist}
             />

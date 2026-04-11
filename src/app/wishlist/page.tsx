@@ -68,7 +68,6 @@ export default function WishlistPage() {
                 location={exp.location}
                 duration={exp.duration}
                 category={exp.category}
-                niche_category={exp.niche_category}
                 isWishlisted={isWishlisted(expId)}
                 onToggleWishlist={toggleWishlist}
               />

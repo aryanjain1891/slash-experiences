@@ -45,12 +45,12 @@ async function run() {
   for (const e of experiences) {
     try {
       await sql.query(
-        `INSERT INTO experiences (id, title, description, image_url, price, location, latitude, longitude, duration, participants, date, category, niche_category, trending, featured, romantic, adventurous, group_activity, created_at, updated_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
+        `INSERT INTO experiences (id, title, description, image_url, price, location, latitude, longitude, duration, participants, availability, category, trending, featured, romantic, adventurous, group_activity, created_at, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
          ON CONFLICT (id) DO NOTHING`,
         [e.id, e.title, e.description, e.image_url, e.price, e.location,
-         e.latitude, e.longitude, e.duration, e.participants, e.date,
-         e.category, e.niche_category, e.trending ?? false, e.featured ?? false,
+         e.latitude, e.longitude, e.duration, e.participants, e.date ?? e.availability,
+         e.category, e.trending ?? false, e.featured ?? false,
          e.romantic ?? false, e.adventurous ?? false, e.group_activity ?? false,
          e.created_at, e.updated_at]
       );

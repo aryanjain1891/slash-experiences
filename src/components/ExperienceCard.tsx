@@ -15,49 +15,7 @@ import {
   CarouselNext,
 } from "@/components/ui/carousel";
 import { useSavedExperiences } from "@/hooks/useSavedExperiences";
-
-const FALLBACK_IMAGES = [
-  "/assets/placeholder.jpg",
-  "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80",
-  "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=400&q=80",
-  "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=400&q=80",
-  "https://images.unsplash.com/photo-1519125323398-675f0ddb6308?auto=format&fit=crop&w=400&q=80",
-];
-
-function getValidImgSrc(src: unknown): string {
-  if (!src) return "/assets/placeholder.jpg";
-  if (Array.isArray(src)) return getValidImgSrc(src[0]);
-  if (typeof src === "object" && src !== null) {
-    const obj = src as Record<string, unknown>;
-    if (typeof obj.url === "string") return obj.url;
-    if (typeof obj.path === "string") return obj.path;
-    return "/assets/placeholder.jpg";
-  }
-  if (typeof src !== "string") return "/assets/placeholder.jpg";
-  if (src.startsWith("data:image/")) return src;
-  return src.replace("/lovable-uploads/", "/assets/");
-}
-
-function parseImageUrls(imageUrl: unknown): string[] {
-  if (imageUrl == null) return [];
-  if (Array.isArray(imageUrl)) return imageUrl.map((u: unknown) => getValidImgSrc(u));
-  if (typeof imageUrl !== "string") return [];
-  const trimmed = imageUrl.trim();
-  if (!trimmed) return [];
-  if (trimmed.startsWith("data:image/")) return [trimmed];
-  if (trimmed.startsWith("[")) {
-    try {
-      const parsed = JSON.parse(trimmed);
-      if (Array.isArray(parsed)) return parsed.map((u: unknown) => getValidImgSrc(u));
-    } catch {
-      // fall through to comma-split
-    }
-  }
-  if (trimmed.includes(",") && !trimmed.startsWith("data:")) {
-    return trimmed.split(",").map((u) => getValidImgSrc(u.trim()));
-  }
-  return [getValidImgSrc(trimmed)];
-}
+import { parseImageUrls, FALLBACK_IMAGE } from "@/lib/image-utils";
 
 export interface ExperienceCardProps {
   id: string;
@@ -69,7 +27,6 @@ export interface ExperienceCardProps {
   duration?: string;
   participants?: string;
   category?: string;
-  niche_category?: string | null;
   trending?: boolean | null;
   featured?: boolean | null;
   romantic?: boolean | null;
@@ -95,11 +52,11 @@ export default function ExperienceCard({
   const router = useRouter();
   const { isSaved, toggleSaved } = useSavedExperiences();
   const images = parseImageUrls(image_url ?? null);
-  const [imgSrc, setImgSrc] = useState(images[0] || "/assets/placeholder.jpg");
+  const [imgSrc, setImgSrc] = useState(images[0] || FALLBACK_IMAGE);
   const [imgError, setImgError] = useState(false);
 
   useEffect(() => {
-    const first = images[0] || "/assets/placeholder.jpg";
+    const first = images[0] || FALLBACK_IMAGE;
     setImgSrc(first);
     setImgError(false);
   }, [image_url]);

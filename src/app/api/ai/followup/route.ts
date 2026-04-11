@@ -60,7 +60,7 @@ Write a single, concise search phrase (15-25 words) that captures what they actu
 
     const experiences = await db.execute(
       sql`SELECT id, title, description, image_url, price, location, duration,
-                 participants, date, category, niche_category, trending, featured,
+                 participants, availability, category, trending, featured,
                  romantic, adventurous, group_activity
           FROM experiences
           WHERE 1=1 ${excludeClause}

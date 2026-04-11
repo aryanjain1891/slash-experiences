@@ -24,6 +24,7 @@ import {
   getActiveFilterCount,
   type FilterOptions,
 } from "@/components/FilterDialog";
+import { getFirstImageUrl } from "@/lib/image-utils";
 
 const SORT_OPTIONS = [
   { value: "default", label: "Featured" },
@@ -59,24 +60,6 @@ function parseExpType(raw: string | null): string[] {
   }
 }
 
-function getFirstImageUrl(exp: Experience): string {
-  const raw = exp.image_url;
-  if (!raw) return "/assets/placeholder.jpg";
-  if (typeof raw === "string") {
-    const trimmed = raw.trim();
-    if (trimmed.startsWith("[")) {
-      try {
-        const arr = JSON.parse(trimmed);
-        return Array.isArray(arr) && arr[0] ? String(arr[0]) : "/assets/placeholder.jpg";
-      } catch {
-        return trimmed;
-      }
-    }
-    if (trimmed.includes(",")) return trimmed.split(",")[0].trim();
-    return trimmed;
-  }
-  return "/assets/placeholder.jpg";
-}
 
 export default function ExperiencesPage() {
   return (
@@ -235,7 +218,7 @@ function ExperiencesContent() {
 
   // Collect images for the ImageTrail
   const trailImages = useMemo(
-    () => allExperiences.slice(0, 20).map(getFirstImageUrl).filter((u) => u !== "/assets/placeholder.jpg"),
+    () => allExperiences.slice(0, 20).map((e) => getFirstImageUrl(e.image_url)).filter((u) => u !== "/assets/placeholder.jpg"),
     [allExperiences]
   );
 
@@ -436,7 +419,6 @@ function ExperiencesContent() {
                           location={exp.location}
                           duration={exp.duration}
                           category={exp.category}
-                          niche_category={exp.niche_category}
                           isWishlisted={isWishlisted(exp.id)}
                           onToggleWishlist={toggleWishlist}
                         />
@@ -463,7 +445,6 @@ function ExperiencesContent() {
                       location={exp.location}
                       duration={exp.duration}
                       category={exp.category}
-                      niche_category={exp.niche_category}
                       isWishlisted={isWishlisted(exp.id)}
                       onToggleWishlist={toggleWishlist}
                     />
@@ -487,7 +468,6 @@ function ExperiencesContent() {
                   location={exp.location}
                   duration={exp.duration}
                   category={exp.category}
-                  niche_category={exp.niche_category}
                   isWishlisted={isWishlisted(exp.id)}
                   onToggleWishlist={toggleWishlist}
                 />

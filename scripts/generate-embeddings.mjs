@@ -50,7 +50,6 @@ function buildEmbeddingText(exp) {
     exp.title,
     exp.description,
     exp.category,
-    exp.niche_category,
     exp.location,
     exp.exp_type,
     exp.tags,
@@ -59,7 +58,7 @@ function buildEmbeddingText(exp) {
 }
 
 async function main() {
-  const experiences = await sql`SELECT id, title, description, category, niche_category, location, exp_type, tags FROM experiences WHERE embedding IS NULL`;
+  const experiences = await sql`SELECT id, title, description, category, location, exp_type, tags FROM experiences WHERE embedding IS NULL`;
 
   console.log(`Found ${experiences.length} experiences without embeddings`);
 

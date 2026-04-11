@@ -9,9 +9,8 @@ export interface Experience {
   longitude: string | null;
   duration: string;
   participants: string;
-  date: string;
+  availability: string;
   category: string;
-  niche_category: string | null;
   trending: boolean | null;
   featured: boolean | null;
   romantic: boolean | null;
@@ -19,8 +18,6 @@ export interface Experience {
   group_activity: boolean | null;
   tags: string | null;
   exp_type: string | null;
-  status: string | null;
-  idtag: number | null;
   created_at: string | null;
   updated_at: string | null;
 }

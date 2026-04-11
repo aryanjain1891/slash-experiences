@@ -31,14 +31,14 @@ await test("GET /api/experiences returns 200 with array", async () => {
   return `${exps.length} experiences`;
 });
 
-await test("Experiences have snake_case fields", async () => {
+await test("Experiences have required fields", async () => {
   const { body } = await fetchJSON("/api/experiences?featured=true");
   const exp = body?.experiences?.[0];
   if (!exp) throw new Error("No featured experiences");
   if (!("image_url" in exp)) throw new Error("Missing image_url (has imageUrl?)");
-  if (!("niche_category" in exp)) throw new Error("Missing niche_category");
   if (!("exp_type" in exp)) throw new Error("Missing exp_type");
-  return "snake_case OK";
+  if (!("availability" in exp)) throw new Error("Missing availability");
+  return "fields OK";
 });
 
 await test("Experience images are valid HTTPS URLs", async () => {

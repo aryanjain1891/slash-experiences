@@ -34,6 +34,7 @@ import { useSavedExperiences } from "@/hooks/useSavedExperiences";
 import { useTrackExperienceView } from "@/hooks/useTrackExperienceView";
 import ExperienceCard from "@/components/ExperienceCard";
 import type { Experience } from "@/types/experience";
+import { parseImageUrls, getValidImgSrc } from "@/lib/image-utils";
 
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -56,19 +57,6 @@ const Marker = dynamic(
   () => import("react-leaflet").then((m) => m.Marker),
   { ssr: false }
 );
-
-function getValidImgSrc(src: unknown): string {
-  if (!src) return "/assets/placeholder.jpg";
-  if (Array.isArray(src)) return getValidImgSrc(src[0]);
-  if (typeof src === "object" && src !== null) {
-    const obj = src as Record<string, unknown>;
-    if (typeof obj.url === "string") return obj.url;
-    if (typeof obj.path === "string") return obj.path;
-    return "/assets/placeholder.jpg";
-  }
-  if (typeof src !== "string") return "/assets/placeholder.jpg";
-  return src;
-}
 
 class MapErrorBoundary extends React.Component<
   { children: React.ReactNode; onError?: () => void },
@@ -168,22 +156,7 @@ export default function ExperienceDetailPage() {
 
   const imageUrls = useMemo(() => {
     if (!experience) return [];
-    const raw = experience.image_url;
-    if (Array.isArray(raw)) return raw.filter(Boolean).map((u) => getValidImgSrc(u));
-    if (typeof raw === "string" && raw) {
-      const trimmed = raw.trim();
-      if (trimmed.startsWith("[")) {
-        try {
-          const parsed = JSON.parse(trimmed);
-          if (Array.isArray(parsed)) return parsed.map((u: unknown) => getValidImgSrc(u));
-        } catch { /* fall through */ }
-      }
-      if (trimmed.includes(",") && !trimmed.startsWith("data:")) {
-        return trimmed.split(",").map((u) => getValidImgSrc(u.trim()));
-      }
-      return [getValidImgSrc(trimmed)];
-    }
-    return ["/assets/placeholder.jpg"];
+    return parseImageUrls(experience.image_url);
   }, [experience]);
 
   const handlePrevImage = () =>
@@ -397,7 +370,7 @@ export default function ExperienceDetailPage() {
               </div>
               <h3 className="font-medium text-sm mb-1">Date</h3>
               <p className="text-muted-foreground text-xs">
-                {experience.date}
+                {experience.availability}
               </p>
             </div>
             <div className="flex flex-col items-center">

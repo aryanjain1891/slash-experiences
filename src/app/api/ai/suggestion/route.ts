@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
 
     const candidates = await db.execute(
       sql`SELECT id, title, description, image_url, price, location, duration,
-                 participants, date, category, niche_category, trending, featured,
+                 participants, availability, category, trending, featured,
                  romantic, adventurous, group_activity
           FROM experiences
           WHERE embedding IS NOT NULL ${priceFilter}
