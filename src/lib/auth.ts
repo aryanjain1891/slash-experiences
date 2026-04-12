@@ -4,6 +4,9 @@ import { Pool } from "pg";
 export const auth = betterAuth({
   database: new Pool({
     connectionString: process.env.AUTH_DATABASE_URL!,
+    max: 1,                    // one connection per serverless instance
+    idleTimeoutMillis: 20000,  // release idle connections after 20s
+    connectionTimeoutMillis: 10000,
   }),
   socialProviders: {
     google: {

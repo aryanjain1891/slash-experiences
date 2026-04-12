@@ -14,7 +14,12 @@ function createDb() {
     );
   }
   // prepare: false required — Supabase's PgBouncer transaction pooler doesn't support prepared statements
-  const client = postgres(process.env.DATABASE_URL, { prepare: false });
+  const client = postgres(process.env.DATABASE_URL, {
+    prepare: false,   // required for PgBouncer transaction mode
+    max: 1,           // one connection per serverless instance
+    idle_timeout: 20, // release idle connections after 20s
+    connect_timeout: 10,
+  });
   return drizzle(client, { schema });
 }
 
