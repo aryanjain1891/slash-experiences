@@ -1,5 +1,5 @@
-import { neon } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-http";
+import postgres from "postgres";
+import { drizzle } from "drizzle-orm/postgres-js";
 import * as schema from "./schema";
 
 type DbInstance = ReturnType<typeof createDb>;
@@ -13,8 +13,9 @@ function createDb() {
       "DATABASE_URL is not set. Please add it to your .env.local file."
     );
   }
-  const sql = neon(process.env.DATABASE_URL);
-  return drizzle(sql, { schema });
+  // prepare: false required — Supabase's PgBouncer transaction pooler doesn't support prepared statements
+  const client = postgres(process.env.DATABASE_URL, { prepare: false });
+  return drizzle(client, { schema });
 }
 
 export function getDb(): DbInstance {
