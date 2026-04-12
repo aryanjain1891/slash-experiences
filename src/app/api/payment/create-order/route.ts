@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     const order = await razorpay.orders.create({
       amount: Math.round(totalAmount * 100),
       currency: resolvedCurrency,
-      receipt: `receipt_${crypto.randomUUID()}`,
+      receipt: `rcpt_${crypto.randomUUID().slice(0, 35)}`,
     });
 
     return NextResponse.json({ ...order, serverAmount: totalAmount });
