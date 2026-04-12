@@ -31,8 +31,8 @@ export async function GET(request: NextRequest) {
             LIMIT 20`
       );
 
-      if (results.rows.length > 0) {
-        return NextResponse.json({ experiences: results.rows });
+      if (results.length > 0) {
+        return NextResponse.json({ experiences: results });
       }
     }
 
@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
           LIMIT 20`
     );
 
-    return NextResponse.json({ experiences: results.rows });
+    return NextResponse.json({ experiences: results });
   } catch (error) {
     console.error("Error fetching swipe experiences:", error);
     return NextResponse.json(

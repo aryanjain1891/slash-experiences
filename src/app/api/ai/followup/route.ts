@@ -81,19 +81,19 @@ ${JSON.stringify(session.answers)}
 They weren't happy with the previous suggestions and said: "${question}"
 
 Here are the new experience matches based on their feedback:
-${(experiences.rows as Record<string, unknown>[]).map((e, i) => `${i + 1}. ${e.title} - ${e.description} (₹${e.price}, ${e.location})`).join("\n")}
+${(experiences as Record<string, unknown>[]).map((e, i) => `${i + 1}. ${e.title} - ${e.description} (₹${e.price}, ${e.location})`).join("\n")}
 
 Write a warm, concise response (2-3 paragraphs) acknowledging their feedback and explaining why these new picks are a better fit.`,
     });
 
     await updateSession(sessionId, {
-      suggestions: experiences.rows as unknown[],
+      suggestions: experiences as unknown[],
       context: { queryText: refinedQuery.trim(), aiResponse, followupQuestion: question },
     });
 
     return NextResponse.json({
       response: aiResponse,
-      suggestions: experiences.rows,
+      suggestions: experiences,
       aiResponse,
     });
   } catch (error) {

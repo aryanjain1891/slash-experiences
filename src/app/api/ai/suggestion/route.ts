@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
           LIMIT ${candidateLimit}`
     );
 
-    const candidateRows = candidates.rows as Record<string, unknown>[];
+    const candidateRows = candidates as Record<string, unknown>[];
 
     // Use Gemini to pick and rank the best matches from the candidates
     const { text: rankedJson } = await generateText({
