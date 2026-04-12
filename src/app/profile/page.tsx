@@ -149,17 +149,17 @@ function ProfileContent() {
     setLoadingSaved(true);
     (async () => {
       try {
-        const results: Experience[] = [];
-        for (const eid of savedIds) {
-          try {
-            const res = await fetch(`/api/experiences/${eid}`);
-            if (res.ok) {
+        const results = await Promise.all(
+          savedIds.map(async (eid) => {
+            try {
+              const res = await fetch(`/api/experiences/${eid}`);
+              if (!res.ok) return null;
               const data = await res.json();
-              results.push(data.experience ?? data);
-            }
-          } catch { /* skip failed */ }
-        }
-        setSavedItems(results);
+              return (data.experience ?? data) as Experience;
+            } catch { return null; }
+          })
+        );
+        setSavedItems(results.filter((e): e is Experience => e !== null));
       } finally {
         setLoadingSaved(false);
       }
